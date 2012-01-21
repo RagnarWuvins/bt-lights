@@ -8,7 +8,7 @@ This page gives an overview of the used SPP Serial protocol
 
 == AT (at) ==
 
-For an exact definition please see the BT firmware documentation.
+For an exact definition please see the BT firmware [https://code.google.com/p/bt-lights/source/browse/trunk/Documentation/HC-0305%20serail%20module%20AT%20commamd%20set%20201104%20revised.pdf documentation].
 
 || *Command* || *Description* || *Response* || *Remark* ||
 || AT || || || OK ||
