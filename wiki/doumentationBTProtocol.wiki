@@ -1,0 +1,20 @@
+<wiki:toc max_depth="2" />
+#summary BT - Lights Documentation page
+
+= Bluetooth SPP Protocol = 
+This page gives an overview of the used SPP Serial protocol
+
+== Command Types ==
+
+== AT (at) ==
+
+For an exact definition please see the BT firmware documentation.
+
+|| *Command* || *Description* || *Response* || *Remark* ||
+|| AT || || || OK ||
+|| AT+RESET || || OK || None ||
+
+== Channel commands (cc) ==
+
+
+== Direct port commands (dp) ==
