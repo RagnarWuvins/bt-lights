@@ -1,5 +1,6 @@
-<wiki:toc max_depth="2" />
 #summary BT - Lights with EL wire main page
+<wiki:toc max_depth="2" />
+
 
 = Introduction =
 This project will be about a bluetooth control for a 16 channel EL wire dimmer. The hardware is realized with Netduino / Arduino and additional peripherie.
