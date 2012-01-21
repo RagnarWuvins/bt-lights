@@ -1,0 +1,19 @@
+#summary BT - Lights with EL wire
+
+= Introduction =
+This project will be about a bluetooth control for a 16 channel EL wire dimmer. The hardware is realized with Netduino / Arduino and additional peripherie.
+
+
+= ToDo =
+
+Requirements:
+ * protocol for BT interface on Netduino
+ * Dimming hardware for 8 and 16 channels
+ * Portation from Netduino to Arduino
+ * Library for using dimming hardware
+
+= Closed =
+
+Requirements:
+ * Find BT firmware that can be used with Android Phones.
+ * Test Firmware on Netduino to configure BT module and send commands
