@@ -1,5 +1,5 @@
 #sidebar TableOfContents
-  * [Main mainBTlights]
-  * [Documentation]
-    *[Serial protocol doumentationBTProtocol]
-    *[Hardware libraries hwLib]
+  * [mainBTlights Main]
+  * [docOverview Documentation]
+    *[doumentationBTProtocol Serial protocol]
+    *[hwLib Hardware libraries]
