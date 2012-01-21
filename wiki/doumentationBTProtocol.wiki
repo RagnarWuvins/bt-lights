@@ -37,7 +37,11 @@ Channel commands will set or get a value for the designated channel. The first "
 || ccXX+ENABLE=Param || Enable or disable the channel || OK/FAIL || ||
 || ccXX+VALUE? || Get the value of the current channel || CHXX:Param || ||
 || ccXX+VALUE=Param1 || Set the value of the current channel || OK || ||
-|| ccXX+FUNC=Param1 || Set the function of the current channel || OK || See the function list for details ||
 || ccXX+FUNC? || Get the function of the current channel || CHXX:Param || ||
+|| ccXX+FUNC=Param1 || Set the function of the current channel || OK || See the function list for details ||
+
+Functions list (planned):
+* SINE
+
 
 == Direct port commands (dp) ==
