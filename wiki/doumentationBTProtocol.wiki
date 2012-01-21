@@ -9,10 +9,18 @@ This page gives an overview of the used SPP Serial protocol
 == AT (at) ==
 
 For an exact definition please see the BT firmware [https://code.google.com/p/bt-lights/source/browse/trunk/Documentation/HC-0305%20serail%20module%20AT%20commamd%20set%20201104%20revised.pdf documentation].
+These commands are actually a wrapper for the BT serial connection. They will be forwarded by the hardware and will not need the "\n\r" at the end.
 
 || *Command* || *Description* || *Response* || *Remark* ||
-|| AT || || || OK ||
+|| AT || || OK || None  ||
 || AT+RESET || || OK || None ||
+|| AT+VERSION? || Get the soft version || +VERSION: Param || None ||
+|| AT+ORGL || Restore default status || OK || None ||
+|| AT+ADDR? || Get Bluetooth module address || +ADDR: Param OK || None ||
+|| AT+NAME=Param || Set device’s name || OK || None ||
+|| AT+NAME? || Get device’s name || +NAME Param, OK / FAIL || None ||
+|| AT+RNAME?Param1 || Get the remote Bluetooth device’s name || +NAME:Param2 OK / FAIL || Example: Bluetooth device address: 00:02:72:od:22:24;<br> device name: Bluetooth <br>at+rname? 0002,72,od2224\r\n <br> +RNAME:Bluetooth <br>OK ||
+
 
 == Channel commands (cc) ==
 
