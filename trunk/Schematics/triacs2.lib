@@ -1,0 +1,553 @@
+**********************************
+**********************************
+**
+** Littelfuse, LP
+** TRIAC SPICE Models
+** L01-EV
+**
+** T. Chenoski
+** Irving Technical Center
+**
+** A 06/08/08
+**
+**********************************
+**********************************
+.SUBCKT L0103DE    1	2		  3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0103ME    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0103NE    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0103DT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0103MT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0103NT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    250
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       2.0
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.5
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107DE    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107ME    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107NE    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107DT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107MT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0107NT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109DE    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109ME    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109NE    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109DT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=400)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109MT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=600)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS
+
+.SUBCKT L0109NT    1    2         3
+*       TERMINALS: MT2  G         MT1
+Qnpn1   5          4    3         NoutF   OFF
+Qpnp1   4          5    7         PoutF   OFF
+Qnpn2   11         6    7         NoutR   OFF
+Qpnp2   6          11   3         PoutR   OFF
+Dfor    4          5    DZ        OFF
+Drev    6          11   DZ        OFF
+Rfor    4          6    12MEG
+Ron     1          7    300m
+Rhold   7          6    150
+RGP     8          3    350
+RG      2          8    150
+RS      8          4    250
+DN      9          2    DIN       OFF
+RN      9          3    6.0
+GNN     6          7    9         3       0.2
+GNP     4          5    9         3       0.521
+DP      2          10   DIP       OFF
+RP      10         3    4.0
+GP      7          6    10        3       0.15
+.MODEL  DIN        D    (IS=382F)
+.MODEL  DIP        D    (IS=382F  N=1.19)
+.MODEL  DZ         D    (IS=382F  N=1.5   IBV=50U  BV=800)
+.MODEL  PoutF      PNP  (IS=382F  BF=1    CJE=190p TF=0.3U)
+.MODEL  NoutF      NPN  (IS=382F  BF=3    CJE=190p CJC=38p  TF=0.3U)
+.MODEL  PoutR      PNP  (IS=382F  BF=5    CJE=190p TF=0.3U)
+.MODEL  NoutR      NPN  (IS=382F  BF=0.5  CJE=190p CJC=38p  TF=0.3U)
+.ENDS

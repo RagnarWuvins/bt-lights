@@ -1,0 +1,23 @@
+Circuit: * C:\Users\benni\Documents\Visual Studio 2010\Projects\Lights_v1.0\Schematics\Draft1.asc
+
+WARNING: Less than two connections to node N005.  This node is used by V1.
+Direct Newton iteration for .op point succeeded.
+
+Date: Sat Sep 17 08:43:25 2011
+Total elapsed time: 0.043 seconds.
+
+tnom = 27
+temp = 27
+method = modified trap
+totiter = 2110
+traniter = 2082
+tranpoints = 1042
+accept = 1042
+rejected = 0
+matrix size = 7
+fillins = 0
+solver = Normal
+Matrix Compiler1:      11 opcodes  0.1/[0.1]/0.1
+Matrix Compiler2: off  [0.1]/0.1/0.2
+
+
