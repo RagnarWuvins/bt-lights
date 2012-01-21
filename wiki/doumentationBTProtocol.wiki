@@ -1,5 +1,5 @@
-<wiki:toc max_depth="2" />
 #summary BT - Lights Documentation page
+<wiki:toc max_depth="2" />
 
 = Bluetooth SPP Protocol = 
 This page gives an overview of the used SPP Serial protocol
