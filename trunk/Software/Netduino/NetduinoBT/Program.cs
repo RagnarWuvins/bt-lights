@@ -11,13 +11,38 @@ namespace NetduinoBT
 {
     public class Program
     {
+#if BT_TEST
         static SerialPort serialPort;
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         static OutputPort resetPin = new OutputPort(Pins.GPIO_PIN_D5, true);
         static OutputPort atPin = new OutputPort(Pins.GPIO_PIN_D4, false);
         static bool tl = false;
+#endif
+#if LT_TEST
+        ELEscudo channel1 = new ELEscudo(Pins.GPIO_PIN_D2, false, 10);
+        ELEscudo channel2 = new ELEscudo(Pins.GPIO_PIN_D3, false, 10);
+        ELEscudo channel3 = new ELEscudo(Pins.GPIO_PIN_D4, false, 10);
+        ELEscudo channel4 = new ELEscudo(Pins.GPIO_PIN_D5, false, 10);
+        ELEscudo channel5 = new ELEscudo(Pins.GPIO_PIN_D6, false, 10);
+        ELEscudo channel6 = new ELEscudo(Pins.GPIO_PIN_D7, false, 10);
+        ELEscudo channel7 = new ELEscudo(Pins.GPIO_PIN_D8, false, 10);
+        ELEscudo channel8 = new ELEscudo(Pins.GPIO_PIN_D9, false, 10);
+        ELEscudo status = new ELEscudo(Pins.GPIO_PIN_D10, true, 10);
+#endif
 
         public static void Main()
+        {  
+#if BT_TEST
+            testBT();
+#endif
+#if LT_TEST
+            new Program(); 
+            Thread.Sleep(-1);
+#endif
+        }
+
+#if BT_TEST
+        public static void testBT()
         {
             InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptEdgeLow);
             button.OnInterrupt += new NativeEventHandler(button_OnInterrupt);
@@ -70,16 +95,17 @@ namespace NetduinoBT
                     default:
                         break;
                 }
+                // flood stopper
                 Thread.Sleep(100);
             }
-        }
+        }//testBT()
 
         public static void send2BT(string sendString)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(sendString);
             serialPort.Write(bytes, 0, bytes.Length);
             //checkOK();
-        }
+        }//send2BT(string sendString)
 
         public static void dump(string[] commands)
         {
@@ -101,7 +127,7 @@ namespace NetduinoBT
             }
             atPin.Write(false);
             resetBTModul();
-        }
+        }//dump(string[] commands)
 
         public static string receiveBT()
         {
@@ -128,7 +154,7 @@ namespace NetduinoBT
                 }
             }
             return output;
-        }
+        }//string receiveBT()
 
         public static void debug(string command)
         {
@@ -142,7 +168,7 @@ namespace NetduinoBT
                 testStr = receiveBT();
                 Debug.Print(testStr);
             }
-        }
+        }//debug(string command)
 
         public static void resetBTModul()
         {
@@ -150,7 +176,7 @@ namespace NetduinoBT
             Thread.Sleep(5);
             resetPin.Write(true);
             Thread.Sleep(2000);
-        }
+        }//resetBTModul()
 
         public static void inqBTModul()
         {
@@ -164,12 +190,12 @@ namespace NetduinoBT
             send2BT("\r\n+INQ=1\r\n");
             readStr = receiveBT();
             Debug.Print(readStr);
-        }
+        }//inqBTModul()
 
         public static int millis()
         {
             return (int)DateTime.Now.Millisecond;
-        }
+        }//millis()
 
         public static void checkOK()
         {
@@ -203,14 +229,37 @@ namespace NetduinoBT
                 a = System.Text.Encoding.UTF8.GetChars(buffer)[0];
                 //Wait until all response chars are received
             }
-        }
+        }//checkOK()
 
         static void button_OnInterrupt(uint data1, uint data2, DateTime time)
         {
             //resetBTModul();
             dump(Constants.reset);
             //inqBTModul();
+        }//button_OnInterrupt()
+#endif
+#if LT_TEST
+        public Program()
+        {
+            int[] testArray = { 1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40 };
+            while (true)
+            {
+                channel1._debug = false;
+                foreach (int t in testArray)
+                {
+                    channel1.pulse();
+                    channel4.pulse();
+                    channel1._pulseDuration = t;
+                    channel4._pulseDuration = t;
+                    Debug.Print("Now at channel 1 with pulsewidth " + t);
+                }
+                //channel2.pulse(); Debug.Print("Now at channel 2");
+                //channel3.pulse(); Debug.Print("Now at channel 3");
+                //channel4.pulse(); Debug.Print("Now at channel 4");
+                //channel5.pulse(); Debug.Print("Now at channel 5");
+                //channel6.pulse(); Debug.Print("Now at channel 6");
+            }
         }
+#endif
     }
-
 }
