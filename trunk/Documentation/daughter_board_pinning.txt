@@ -1,0 +1,19 @@
+MCU:
+
+10: Slave select (1)
+11: MOSI
+12: MISO
+13: SCLK
+
+Daughter board:
+
+1: GND			black
+3: 5V			white
+2: 3.3V			gray
+4: Slave Select		purple
+5: MOSI			blue
+6: MISO			green
+7: SCLK			yellow
+8: general purpose	orange
+9: general purpose	red
+10: general purpose	brown

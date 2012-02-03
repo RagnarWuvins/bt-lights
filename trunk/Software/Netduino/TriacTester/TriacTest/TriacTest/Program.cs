@@ -13,22 +13,35 @@ namespace Netduino.TestInterrupt
         static OutputPort TriacA = new OutputPort(Pins.GPIO_PIN_D2, false);
         static OutputPort TriacB = new OutputPort(Pins.GPIO_PIN_D3, false);
         static OutputPort TriacC = new OutputPort(Pins.GPIO_PIN_D4, false);
-        static OutputPort TriacD = new OutputPort(Pins.GPIO_PIN_D5, false);
-        static OutputPort TriacE = new OutputPort(Pins.GPIO_PIN_D6, false);
-        static OutputPort TriacF = new OutputPort(Pins.GPIO_PIN_D7, false);
-        static OutputPort TriacG = new OutputPort(Pins.GPIO_PIN_D8, false);
-        static OutputPort TriacH = new OutputPort(Pins.GPIO_PIN_D9, false);
         static OutputPort EscudoState = new OutputPort(Pins.GPIO_PIN_D10, true);
 
-        public static OutputPort[] AllTriacs = { TriacA, TriacB, TriacC, TriacD, TriacE, TriacF, TriacG, TriacH };
+        public static OutputPort[] AllTriacs = { TriacA, TriacB, TriacC };
         public static int TriacCounter = 0;
 
+        public static PWM PwmA = new PWM(Pins.GPIO_PIN_D5);
+        public static PWM PwmB = new PWM(Pins.GPIO_PIN_D6);
+        public static PWM PwmC = new PWM(Pins.GPIO_PIN_D9);
+       
+
+        // set PWM initial periods
+        static public uint period = 16 * 1000;    // 10 ms
+        static public uint duration = 1 * 1000;  // 1 ms      
+        static public uint dimValue = 100;
+        static public bool direction = false;
 
         public static void Main()
         {
             // write your code here
             InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptEdgeLow);
             button.OnInterrupt += new NativeEventHandler(button_OnInterrupt);
+
+             // Timer for dimming
+            TimerCallback WriteDelegate = new TimerCallback(Dimmer);
+            Timer Write_ValueTimer = new Timer(WriteDelegate, null, 0, 1);
+
+            PwmA.SetPulse(period, duration);
+            PwmB.SetPulse(period, duration);
+            PwmC.SetPulse(period, duration);
 
             Thread.Sleep(-1);
         }
@@ -42,12 +55,37 @@ namespace Netduino.TestInterrupt
             AllTriacs[TriacCounter].Write(true); Debug.Print("Setting Triac: " + (TriacCounter + 1));
             if (TriacCounter == AllTriacs.Length - 1)
             {
-                TriacCounter = 0; 
+                TriacCounter = 0;                
             }
             else
             {
                 TriacCounter++;
             }
+            duration = 1000;
+            dimValue = 100 * ((uint)TriacCounter + 1);
+        }
+
+        static void Dimmer(object state)
+        {
+            Debug.Print("Timer wird ausgeführt " + duration);
+
+            if (direction)
+            {
+                 duration += dimValue;
+            }
+            else
+            {
+                duration -= dimValue;
+            }
+
+            if (duration <= 0 || duration >= period)
+            {
+                direction = !direction;
+            }
+
+            PwmA.SetPulse(period, duration);
+            PwmB.SetPulse(period, duration);
+            PwmC.SetPulse(period, duration);
         }
     }
 }

@@ -19,9 +19,9 @@ namespace NetduinoBT
         static bool tl = false;
 #endif
 #if LT_TEST
-        ELEscudo channel1 = new ELEscudo(Pins.GPIO_PIN_D2, false, 10);
-        ELEscudo channel2 = new ELEscudo(Pins.GPIO_PIN_D3, false, 10);
-        ELEscudo channel3 = new ELEscudo(Pins.GPIO_PIN_D4, false, 10);
+        ELEscudo channel1 = new ELEscudo(Pins.GPIO_PIN_D2, false, 5);
+        ELEscudo channel2 = new ELEscudo(Pins.GPIO_PIN_D3, false, 5);
+        ELEscudo channel3 = new ELEscudo(Pins.GPIO_PIN_D4, false, 5);
         ELEscudo channel4 = new ELEscudo(Pins.GPIO_PIN_D5, false, 10);
         ELEscudo channel5 = new ELEscudo(Pins.GPIO_PIN_D6, false, 10);
         ELEscudo channel6 = new ELEscudo(Pins.GPIO_PIN_D7, false, 10);
@@ -241,20 +241,11 @@ namespace NetduinoBT
 #if LT_TEST
         public Program()
         {
-            int[] testArray = { 1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40 };
             while (true)
             {
-                channel1._debug = false;
-                foreach (int t in testArray)
-                {
-                    channel1.pulse();
-                    channel4.pulse();
-                    channel1._pulseDuration = t;
-                    channel4._pulseDuration = t;
-                    Debug.Print("Now at channel 1 with pulsewidth " + t);
-                }
-                //channel2.pulse(); Debug.Print("Now at channel 2");
-                //channel3.pulse(); Debug.Print("Now at channel 3");
+                channel1.pulse(); Debug.Print("Now at channel 1");
+                channel2.pulse(); Debug.Print("Now at channel 2");
+                channel3.pulse(); Debug.Print("Now at channel 3");
                 //channel4.pulse(); Debug.Print("Now at channel 4");
                 //channel5.pulse(); Debug.Print("Now at channel 5");
                 //channel6.pulse(); Debug.Print("Now at channel 6");
