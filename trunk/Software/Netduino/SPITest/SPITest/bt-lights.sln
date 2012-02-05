@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C# Express 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bt-lights", "SPITest\bt-lights.csproj", "{9A7018F4-10F5-43CD-958F-4B4075668FC6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bt-lights", "bt-lights\bt-lights.csproj", "{9A7018F4-10F5-43CD-958F-4B4075668FC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
