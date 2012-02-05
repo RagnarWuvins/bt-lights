@@ -10,16 +10,17 @@ namespace BTLights
         /// </summary>
         #region Bluetooth module definition block
         public static string[] BT_INQ = {
-            "at+version?\r\n",
-            "at+rmaad\r\n",
-            "at+class=240404\r\n",
-            "at+role=0\r\n",
-            "at+name=MeisterLampe\r\n",
-            "at+inqm=1,9,48\r\n"
+            "at+version?",  // get version
+            "at+adcn?",     // number of authenticated devices            
+            "at+class=240404",
+            "at+role=0",
+            "at+name=MeisterLampe",
+            "at+inqm=1,9,48",
+            "at+state?"    // current state of BT module
                                         };
         public static string[] BT_RESET = {
-            "at+orgl\r\n",
-            "at+class=240404\r\n"
+            "at+orgl",
+            "at+class=240404"
             };
         #endregion
         /// <summary>
@@ -41,6 +42,8 @@ namespace BTLights
         public static byte OUTPUT_ALL = 0x0A; // All outputs
         public static byte RAMP_DOWN = 0x11;
         public static byte RAMP_UP = 0x12;
+        public static byte LIGHT_ON = 0xFE;
+        public static byte LIGHT_OFF = 0x01;
 
         public static byte CONF_RUN = 0x01; // run current config
         public static byte CONF_CSRUN = 0x02; // run current config on CS

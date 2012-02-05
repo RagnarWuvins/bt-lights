@@ -1,9 +1,14 @@
 MCU:
 
+
+0:  RX Serial (->)
+1:  TX Serial (->)
+2:  AT Pin (BT)
 10: Slave select (1)
 11: MOSI
 12: MISO
 13: SCLK
+
 
 Daughter board:
 
@@ -14,6 +19,6 @@ Daughter board:
 5: MOSI			blue
 6: MISO			green
 7: SCLK			yellow
-8: general purpose	orange
-9: general purpose	red
-10: general purpose	brown
+8: AT Pin (BT)		orange
+9: RX Serial (<-)	red
+10: TX Serial (<-)	brown

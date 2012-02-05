@@ -6,6 +6,7 @@ using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
 using SecretLabs.NETMF.Hardware.Netduino;
+using System.Text;
 
 namespace BTLights
 {
@@ -17,6 +18,15 @@ namespace BTLights
         public static byte[] ReadBuffer;
 
         public static BTModule _BT;
+
+        public static LightString channelP9;
+        public static LightString channelP8;
+        public static LightString channelP7;
+        public static LightString channelP6;
+        public static LightString channelP5;
+        public static LightString channelP4;
+        public static LightString channelP3;
+        public static LightString channelP2;
 
         public static void Main()
         {
@@ -39,16 +49,20 @@ namespace BTLights
 
             // setting up the serial port for the communication to the BT module
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One, Pins.GPIO_PIN_D2);
+            _BT.CommandReceived += new NativeEventHandler(setMode);
             _BT.dump(Constants.BT_INQ);
 
-            LightString channelP9 = new LightString(_SPIBus, 9, 0);
-            LightString channelP8 = new LightString(_SPIBus, 8, 300);
-            LightString channelP7 = new LightString(_SPIBus, 7, 600);
-            LightString channelP6 = new LightString(_SPIBus, 6, 900);
-            LightString channelP5 = new LightString(_SPIBus, 5, 1200);
-            LightString channelP4 = new LightString(_SPIBus, 4, 1500);
-            LightString channelP3 = new LightString(_SPIBus, 3, 1800);
-            LightString channelP2 = new LightString(_SPIBus, 2, 2100);
+            channelP9 = new LightString(_SPIBus, 9, 0);
+            channelP8 = new LightString(_SPIBus, 8, 300);
+            channelP7 = new LightString(_SPIBus, 7, 600);
+            channelP6 = new LightString(_SPIBus, 6, 900);
+            channelP5 = new LightString(_SPIBus, 5, 1200);
+            channelP4 = new LightString(_SPIBus, 4, 1500);
+            channelP3 = new LightString(_SPIBus, 3, 1800);
+            channelP2 = new LightString(_SPIBus, 2, 2100);
+
+            channelP9.mode = 1;
+            channelP8.mode = 2;
 
             TimerCallback TimerDelegate_P9 = new TimerCallback(channelP9.ModeSelector);
             Timer Timer_P9 = new Timer(TimerDelegate_P9, null, channelP9.timerDelay, channelP9.timerPeriod);
@@ -78,6 +92,51 @@ namespace BTLights
             _SPIBus.Write(WriteBuffer);
 
             Thread.Sleep(-1);
+        }
+
+        public static void setMode(uint i, uint j, DateTime time)
+        {
+            string[] commands = _BT.commandBuffer.Split('\n');
+            foreach (string command in commands)
+            {
+                switch (command)
+                {
+                    case "a":
+                        channelP9.mode = 0;
+                        channelP8.mode = 0;
+                        channelP7.mode = 0;
+                        channelP6.mode = 0;
+                        channelP5.mode = 0;
+                        channelP4.mode = 0;
+                        channelP3.mode = 0;
+                        channelP2.mode = 0;
+                        break;
+                    case "b":
+                        channelP9.mode = 1;
+                        channelP8.mode = 1;
+                        channelP7.mode = 1;
+                        channelP6.mode = 1;
+                        channelP5.mode = 1;
+                        channelP4.mode = 1;
+                        channelP3.mode = 1;
+                        channelP2.mode = 1;
+                        break;
+                    case "c":
+                        channelP9.mode = 2;
+                        channelP8.mode = 2;
+                        channelP7.mode = 2;
+                        channelP6.mode = 2;
+                        channelP5.mode = 2;
+                        channelP4.mode = 2;
+                        channelP3.mode = 2;
+                        channelP2.mode = 2;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            _BT.commandBuffer = "";
+            //Debug.Print("LINE: <" + _BT.commandBuffer + ">");
         }
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.SPOT.Hardware;
 
 namespace BTLights
 {
-    class LightString
+    public class LightString
     {
         public byte channel;
         public int mode = 0, timerPeriod = 50, timerDelay = 0;
@@ -58,6 +58,9 @@ namespace BTLights
         {
             this._SPIBus = SPIBus;
             this.channel = (byte)channel;
+
+            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
+            _SPIBus.Write(writeBuffer);
         }
 
         public LightString(SPI SPIBus, int channel, int timerDelay)
@@ -65,6 +68,9 @@ namespace BTLights
             this._SPIBus = SPIBus;
             this.channel = (byte)channel;
             this.timerDelay = timerDelay;
+
+            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
+            _SPIBus.Write(writeBuffer);
         }
 
         public LightString(SPI SPIBus, int channel, int timerDelay, int timerPeriod)
@@ -73,6 +79,9 @@ namespace BTLights
             this.channel = (byte)channel;
             this.timerDelay = timerDelay;
             this.timerPeriod = timerPeriod;
+
+            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
+            _SPIBus.Write(writeBuffer);
         }
 
         // Delegate for timer
@@ -84,9 +93,31 @@ namespace BTLights
                 case 0:
                     Fade();
                     break;
+                case 1:
+                    On();
+                    break;
+                case 2:
+                    Off();
+                    break;
                 default:
                     break;
             }
+        }
+
+        // set to on
+        public void On()
+        {
+            writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_ON };
+            _SPIBus.Write(writeBuffer);
+
+        }
+
+        // set to off
+        public void Off()
+        {
+            writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_OFF };
+            _SPIBus.Write(writeBuffer);
+
         }
 
         // fade in and out
@@ -112,9 +143,6 @@ namespace BTLights
                 _dimDir = !_dimDir;
             }
             writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_dimState };
-            _SPIBus.Write(writeBuffer);
-
-            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
 
