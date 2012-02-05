@@ -2,7 +2,7 @@ using System;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 
-namespace SPITest
+namespace BTLights
 {
     class LightString
     {
@@ -76,7 +76,21 @@ namespace SPITest
         }
 
         // Delegate for timer
-        public void Fade(object stateInfo)
+        public void ModeSelector(object modeInfo)
+        {
+            // Set the public mode by bluetooth and this delegate here will call the correct function
+            switch (mode)
+            {
+                case 0:
+                    Fade();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // fade in and out
+        public void Fade()
         {
             if (_dimDir)
             {
@@ -98,6 +112,9 @@ namespace SPITest
                 _dimDir = !_dimDir;
             }
             writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_dimState };
+            _SPIBus.Write(writeBuffer);
+
+            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
 

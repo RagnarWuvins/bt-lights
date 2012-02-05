@@ -1,10 +1,20 @@
 using System;
 using Microsoft.SPOT;
 
-namespace SPITest
+namespace BTLights
 {
     class Constants
     {
+        /// <summary>
+        /// Bluetooth module definition block. Contains all needed constants and support functions
+        /// </summary>
+        #region Bluetooth module definition block
+
+        #endregion
+        /// <summary>
+        /// MAX6966 definition block. Contains all needed constants and support functions
+        /// </summary>
+        #region MAX6966 definition block
         private static byte READ        = 0x80; // Read modifier
         private static byte WRITE       = 0x00; // write modifier
         public static byte OUTPUT_P0    = 0x00;
@@ -37,11 +47,6 @@ namespace SPITest
         {
             return (byte)(Parameter | Constants.WRITE);
         }
-
-        public static byte[] RampDown(int hold, int fade)
-        {
-            return new byte[] {Constants.RAMP_DOWN, (byte)(hold << 0x03 | fade)};
-        }
-
+        #endregion
     }
 }

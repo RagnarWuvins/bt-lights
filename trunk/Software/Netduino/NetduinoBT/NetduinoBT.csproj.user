@@ -14,8 +14,8 @@
     <DeployTransport>Emulator</DeployTransport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugBluetooth|AnyCPU'">
-    <DeployDevice>Microsoft</DeployDevice>
-    <DeployTransport>Emulator</DeployTransport>
+    <DeployDevice>Netduino</DeployDevice>
+    <DeployTransport>USB</DeployTransport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseLights|AnyCPU'">
     <DeployTransport>USB</DeployTransport>

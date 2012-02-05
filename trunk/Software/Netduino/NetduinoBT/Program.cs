@@ -11,37 +11,17 @@ namespace NetduinoBT
 {
     public class Program
     {
-#if BT_TEST
         static SerialPort serialPort;
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         static OutputPort resetPin = new OutputPort(Pins.GPIO_PIN_D5, true);
-        static OutputPort atPin = new OutputPort(Pins.GPIO_PIN_D4, false);
+        static OutputPort atPin = new OutputPort(Pins.GPIO_PIN_D2, false);
         static bool tl = false;
-#endif
-#if LT_TEST
-        ELEscudo channel1 = new ELEscudo(Pins.GPIO_PIN_D2, false, 5);
-        ELEscudo channel2 = new ELEscudo(Pins.GPIO_PIN_D3, false, 5);
-        ELEscudo channel3 = new ELEscudo(Pins.GPIO_PIN_D4, false, 5);
-        ELEscudo channel4 = new ELEscudo(Pins.GPIO_PIN_D5, false, 10);
-        ELEscudo channel5 = new ELEscudo(Pins.GPIO_PIN_D6, false, 10);
-        ELEscudo channel6 = new ELEscudo(Pins.GPIO_PIN_D7, false, 10);
-        ELEscudo channel7 = new ELEscudo(Pins.GPIO_PIN_D8, false, 10);
-        ELEscudo channel8 = new ELEscudo(Pins.GPIO_PIN_D9, false, 10);
-        ELEscudo status = new ELEscudo(Pins.GPIO_PIN_D10, true, 10);
-#endif
 
         public static void Main()
         {  
-#if BT_TEST
             testBT();
-#endif
-#if LT_TEST
-            new Program(); 
-            Thread.Sleep(-1);
-#endif
         }
 
-#if BT_TEST
         public static void testBT()
         {
             InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptEdgeLow);
@@ -110,20 +90,20 @@ namespace NetduinoBT
         public static void dump(string[] commands)
         {
             atPin.Write(true);
-            Thread.Sleep(100);
+            //Thread.Sleep(100);
             for (int i = 0; i < commands.Length; i++)
             {
                 if (i == commands.Length - 1)
                 {
-                    Thread.Sleep(200);
-                    led.Write(true);
-                    Thread.Sleep(1800);
-                    led.Write(false);
+                    //Thread.Sleep(200);
+                   // led.Write(true);
+                    //Thread.Sleep(1800);
+                    //led.Write(false);
                 }
                 send2BT(commands[i]);
                 string readStr = receiveBT();
                 Debug.Print(readStr.Trim());
-                Thread.Sleep(100);
+                //Thread.Sleep(100);
             }
             atPin.Write(false);
             resetBTModul();
@@ -237,20 +217,5 @@ namespace NetduinoBT
             dump(Constants.reset);
             //inqBTModul();
         }//button_OnInterrupt()
-#endif
-#if LT_TEST
-        public Program()
-        {
-            while (true)
-            {
-                channel1.pulse(); Debug.Print("Now at channel 1");
-                channel2.pulse(); Debug.Print("Now at channel 2");
-                channel3.pulse(); Debug.Print("Now at channel 3");
-                //channel4.pulse(); Debug.Print("Now at channel 4");
-                //channel5.pulse(); Debug.Print("Now at channel 5");
-                //channel6.pulse(); Debug.Print("Now at channel 6");
-            }
-        }
-#endif
     }
 }
