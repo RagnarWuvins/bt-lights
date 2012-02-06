@@ -31,7 +31,7 @@ These commands are actually a wrapper for the BT serial connection. They will be
 
 == Channel commands (cc) ==
 
-Channel commands will set or get a value for the designated channel. The first "cc" is followed by the number of the channel (in the table as XX).
+Channel commands will set or get a value for the designated channel. The first "cc" is followed by the number of the channel (in the table as XX, for example 01 or 09).
 
 || *Command* || *Description* || *Response* || *Remark* ||
 || ccXX+ENABLE=Param || Enable or disable the channel || OK/FAIL || ||
@@ -40,8 +40,6 @@ Channel commands will set or get a value for the designated channel. The first "
 || ccXX+FUNC? || Get the function of the current channel || CHXX:Param || ||
 || ccXX+FUNC=Param1 || Set the function of the current channel || OK || See the function list for details ||
 
-Functions list (planned):
-* SINE
-
+== General commands (gc) ==
 
 == Direct port commands (dp) ==
