@@ -16,6 +16,8 @@ namespace BTLights
         public static SPI _SPIBus;
         public static byte[] WriteBuffer;
         public static byte[] ReadBuffer;
+        
+        public static int commandCounter = 0;
 
         public static BTModule _BT;
 
@@ -50,7 +52,9 @@ namespace BTLights
             // setting up the serial port for the communication to the BT module
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One, Pins.GPIO_PIN_D2);
             _BT.CommandReceived += new NativeEventHandler(setMode);
-            _BT.dump(Constants.BT_INQ);
+            // Only for first initialization. Damn got no EEProm to save that state?!
+            _BT.dump(Constants.BT_INIT);
+            _BT.send2BT("at+reset");
 
             channelP9 = new LightString(_SPIBus, 9, 0);
             channelP8 = new LightString(_SPIBus, 8, 300);
@@ -94,49 +98,75 @@ namespace BTLights
             Thread.Sleep(-1);
         }
 
-        public static void setMode(uint i, uint j, DateTime time)
+        public static void setMode(uint bufferIndex, uint j, DateTime time)
         {
-            string[] commands = _BT.commandBuffer.Split('\n');
-            foreach (string command in commands)
+            string _command = _BT.GetCommand(bufferIndex);
+            if (_command == "" || _command == null)
             {
-                switch (command)
-                {
-                    case "a":
-                        channelP9.mode = 0;
-                        channelP8.mode = 0;
-                        channelP7.mode = 0;
-                        channelP6.mode = 0;
-                        channelP5.mode = 0;
-                        channelP4.mode = 0;
-                        channelP3.mode = 0;
-                        channelP2.mode = 0;
-                        break;
-                    case "b":
-                        channelP9.mode = 1;
-                        channelP8.mode = 1;
-                        channelP7.mode = 1;
-                        channelP6.mode = 1;
-                        channelP5.mode = 1;
-                        channelP4.mode = 1;
-                        channelP3.mode = 1;
-                        channelP2.mode = 1;
-                        break;
-                    case "c":
-                        channelP9.mode = 2;
-                        channelP8.mode = 2;
-                        channelP7.mode = 2;
-                        channelP6.mode = 2;
-                        channelP5.mode = 2;
-                        channelP4.mode = 2;
-                        channelP3.mode = 2;
-                        channelP2.mode = 2;
-                        break;
-                    default:
-                        break;
-                }
+                return;
             }
-            _BT.commandBuffer = "";
-            //Debug.Print("LINE: <" + _BT.commandBuffer + ">");
-        }
+            commandCounter++;
+            switch (_command.ToLower())
+            {
+                case "a":
+                    channelP9.mode = 0;
+                    channelP8.mode = 0;
+                    channelP7.mode = 0;
+                    channelP6.mode = 0;
+                    channelP5.mode = 0;
+                    channelP4.mode = 0;
+                    channelP3.mode = 0;
+                    channelP2.mode = 0;
+                    _BT.Acknowledge();
+                    break;
+                case "b":
+                    channelP9.mode = 1;
+                    channelP8.mode = 1;
+                    channelP7.mode = 1;
+                    channelP6.mode = 1;
+                    channelP5.mode = 1;
+                    channelP4.mode = 1;
+                    channelP3.mode = 1;
+                    channelP2.mode = 1;
+                    _BT.Acknowledge();
+                    break;
+                case "c":
+                    channelP9.mode = 2;
+                    channelP8.mode = 2;
+                    channelP7.mode = 2;
+                    channelP6.mode = 2;
+                    channelP5.mode = 2;
+                    channelP4.mode = 2;
+                    channelP3.mode = 2;
+                    channelP2.mode = 2;
+                    _BT.Acknowledge();
+                    break;
+                case "d":
+                    channelP9.mode = 1;
+                    channelP8.mode = 2;
+                    channelP7.mode = 1;
+                    channelP6.mode = 2;
+                    channelP5.mode = 1;
+                    channelP4.mode = 2;
+                    channelP3.mode = 1;
+                    channelP2.mode = 2;
+                    _BT.Acknowledge();
+                    break;
+                case "f":
+                    _BT.dump(Constants.BT_INIT);
+                    _BT.Acknowledge();
+                    break;
+                case "gc+clearcommandcounter":
+                    commandCounter = 0;
+                    break;
+                case "gc+commandsreceived?":
+                    _BT.send2BT(commandCounter.ToString());
+                    break;
+                default:
+                    Debug.Print(_command);
+                    break;
+            }            
+        }      
+        
     }
 }

@@ -9,12 +9,11 @@ namespace BTLights
         /// Bluetooth module definition block. Contains all needed constants and support functions
         /// </summary>
         #region Bluetooth module definition block
-        public static string[] BT_INQ = {
-            "at+version?",  // get version
-            "at+adcn?",     // number of authenticated devices            
+        public static string[] BT_INIT = {
+            "at+version?",  // get version         
             "at+class=240404",
             "at+role=0",
-            "at+name=MeisterLampe",
+            "at+name=Meister Lampe",
             "at+inqm=1,9,48",
             "at+state?"    // current state of BT module
                                         };
