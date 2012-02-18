@@ -35,8 +35,10 @@ Channel commands will set or get a value for the designated channel. The first "
 
 || *Command* || *Description* || *Response* || *Remark* ||
 || ccXX+ENABLE=Param || Enable or disable the channel || OK/FAIL || ||
-|| ccXX+VALUE? || Get the value of the current channel || CHXX:Param || ||
-|| ccXX+VALUE=Param1 || Set the value of the current channel || OK || ||
+|| ccXX+VALUE? || Get the value of the current channel || CHXX:Param || Param is always a 3 digit number (e.g. 030)!  ||
+|| ccXX+VALUE=Param1 || Set the value of the current channel || OK || Param is always a 3 digit number (e.g. 030)! ||
+|| ccXX+MODE? || Get the mode of the current channel || CHXX:Param || Param is always a 3 digit number (e.g. 030)! ||
+|| ccXX+MODE=Param1 || Set the mode of the current channel || OK || Param is always a 3 digit number (e.g. 030)! ||
 || ccXX+FUNC? || Get the function of the current channel || CHXX:Param || ||
 || ccXX+FUNC=Param1 || Set the function of the current channel || OK || See the function list for details ||
 
