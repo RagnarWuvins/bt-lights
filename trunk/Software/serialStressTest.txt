@@ -346,5 +346,4 @@ b
 c
 b
 a
-b
 gc+commandsreceived?

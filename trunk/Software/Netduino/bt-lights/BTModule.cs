@@ -14,15 +14,14 @@ namespace BTLights
         public string commandBuffer = "";
         public event NativeEventHandler CommandReceived;
 
-        const int bufferMax = 1024;
-        const int numOfBuffer = 4;
-        static int buffersInUse = 0;
+        const int bufferMax = 2048;
+        const int numOfBuffer = 2;
         static int curStartIndex = 0;
         static bool receiveLocked = false;
 
-        private int bufferIndex = 0;
-        private byte[] writeBuffer = new Byte[bufferMax];
-        private byte[] buffer = new Byte[bufferMax];
+        private static int bufferIndex = 0;
+        private static byte[] writeBuffer = new Byte[bufferMax];
+        private static byte[] buffer = new Byte[bufferMax];
         private static byte[][] _readBuffer = new Byte[numOfBuffer][];
 
         public BTModule(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, Cpu.Pin atPin)
@@ -45,6 +44,7 @@ namespace BTLights
 
         public void send2BT(string sendString)
         {
+            Debug.Print("-> " + sendString);
             writeBuffer = Encoding.UTF8.GetBytes(sendString + "\r\n");
             Write(writeBuffer, 0, writeBuffer.Length);
         }
@@ -52,7 +52,7 @@ namespace BTLights
         public void dump(string[] commands)
         {
             _atPin.Write(true);
-            Thread.Sleep(100);
+            Thread.Sleep(200);
             foreach (string command in commands)
             {
                 send2BT(command);
@@ -81,12 +81,11 @@ namespace BTLights
                 {
                     if (buffer[i] == '\n')
                     {
+                        Debug.Assert(_readBuffer[bufferIndex][0] == 0, "Buffer overwrite", "Warning, buffer to write not empty");
                         Array.Copy(buffer, index2Copy, _readBuffer[bufferIndex], 0, i - index2Copy - 1);
                         index2Copy = i + 1;
                         uint saveBuffer = (uint)bufferIndex;
                         bufferIndex++;
-                        buffersInUse++;
-                        //Debug.Print("Buffers in use: " + buffersInUse + ", Current temporary buffer length: " + curStartIndex);
                         if (bufferIndex >= numOfBuffer)
                         {
                             bufferIndex = 0;
@@ -95,17 +94,12 @@ namespace BTLights
                     }
                 }
                 Array.Copy(buffer, index2Copy, buffer, 0, curStartIndex - index2Copy);
-                if (index2Copy == 0 && curStartIndex > 0)
-                {
-                    // in case of doubt, clear whole buffer!
-                    //Array.Clear(buffer, 0, bufferMax);
-                    Debug.Print("WARNING, BUFFER INTERRUPT!");
-                }
-                else
+                // if no command was found, clearing the buffer won't do any good
+                if (index2Copy != 0)
                 {
                     Array.Clear(buffer, curStartIndex - index2Copy, curStartIndex);
                 }
-                curStartIndex -= index2Copy;                
+                curStartIndex -= index2Copy;
             }
             receiveLocked = false;
         }
@@ -114,8 +108,6 @@ namespace BTLights
         {
             string command = new string(Encoding.UTF8.GetChars(_readBuffer[bufferIndex]));
             Array.Clear(_readBuffer[bufferIndex], 0, bufferMax);
-            buffersInUse--;
-            //Debug.Print("Buffers in use: " + buffersInUse + ", Current temporary buffer length: " + curStartIndex);
             return command;
         }
     }

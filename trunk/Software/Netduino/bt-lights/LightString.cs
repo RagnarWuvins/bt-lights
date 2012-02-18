@@ -52,27 +52,45 @@ namespace BTLights
         private double _m = 1.0/6.0, _b = 5.0/6.0;
         private bool _dimDir = true;
         private byte[] writeBuffer;
+        private byte[] readBuffer;
         private SPI _SPIBus;
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="SPIBus">SPI Bus to transmit to</param>
+        /// <param name="channel">Number of channel to send</param>
         public LightString(SPI SPIBus, int channel)
         {
             this._SPIBus = SPIBus;
             this.channel = (byte)channel;
 
+            Off();
             writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="SPIBus">SPI Bus to transmit to</param>
+        /// <param name="channel">Number of channel to send</param>
+        /// <param name="timerDelay">Delay of timer in ms</param>
         public LightString(SPI SPIBus, int channel, int timerDelay)
         {
             this._SPIBus = SPIBus;
             this.channel = (byte)channel;
             this.timerDelay = timerDelay;
 
+            Off();
             writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="SPIBus">SPI Bus to transmit to</param>
+        /// <param name="channel">Number of channel to send</param>
+        /// <param name="timerDelay">Delay of timer in ms</param>
+        /// <param name="timerPeriod">Timer period in ms</param>
         public LightString(SPI SPIBus, int channel, int timerDelay, int timerPeriod)
         {
             this._SPIBus = SPIBus;
@@ -80,6 +98,7 @@ namespace BTLights
             this.timerDelay = timerDelay;
             this.timerPeriod = timerPeriod;
 
+            Off();
             writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
@@ -91,13 +110,16 @@ namespace BTLights
             switch (mode)
             {
                 case 0:
-                    Fade();
+                    //default, do nothing
                     break;
                 case 1:
                     On();
                     break;
                 case 2:
                     Off();
+                    break;
+                case 3:
+                    Fade();
                     break;
                 default:
                     break;
@@ -117,6 +139,23 @@ namespace BTLights
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_OFF };
             _SPIBus.Write(writeBuffer);
+
+        }
+    
+        // set to any value
+        public int Value
+        {
+            get
+            {
+                writeBuffer = new byte[] { Constants.Read((byte)channel), 0 };
+                _SPIBus.WriteRead(writeBuffer, readBuffer);
+                return readBuffer[1];
+            }
+            set
+            {
+                writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)value };
+                _SPIBus.Write(writeBuffer);
+            }
 
         }
 

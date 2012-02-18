@@ -5,27 +5,73 @@ namespace BTLights
 {
     class Constants
     {
+        #region Global const definition block
+        // 
+        public enum FW_ERRORS
+        {
+            CMD_UNKNOWN,
+            CMD_CORRUPT,            
+        };
+        #endregion
+
         /// <summary>
         /// Bluetooth module definition block. Contains all needed constants and support functions
         /// </summary>
         #region Bluetooth module definition block
+        public enum BT_COMMANDS
+        {
+            CMD_ACK,
+            CMD_COMMANDCOUNTER,
+            CMD_VALUE,
+            CMD_ERROR,
+            CMD_CPU
+        }
+
         public static string[] BT_INIT = {
             "at+version?",  // get version         
             "at+class=240404",
             "at+role=0",
             "at+name=Meister Lampe",
+            "at+uart=38400,0,0",
             "at+inqm=1,9,48",
+            "at+uart?",
             "at+state?"    // current state of BT module
                                         };
         public static string[] BT_RESET = {
             "at+orgl",
             "at+class=240404"
             };
+        public static string[] BT_BAUD1 = {
+            "at+uart=9600,0,0",
+            "at+uart?"
+            };
+        public static string[] BT_BAUD2 = {
+            "at+uart=38400,0,0",
+            "at+uart?"
+            };
+        public static string[] BT_BAUD3 = {
+            "at+uart=115200,0,0",
+            "at+uart?"
+            };
         #endregion
         /// <summary>
         /// MAX6966 definition block. Contains all needed constants and support functions
         /// </summary>
         #region MAX6966 definition block
+
+        public enum LS_COMMANDS
+        {
+            CMD_SET_VALUE,      // Set channel value
+            CMD_GET_VALUE,      // Get channel value
+            CMD_MODE,           // Set channel mode
+            CMD_RETRIGGER,      // Retrigger channel
+            CMD_RETRIGGER_ALL,  // Retrigger all channels
+            CMD_SET_DELAY,      // Set delay of channel timer
+            CMD_GET_DELAY,      // Get delay of channel timer
+            CMD_SET_PERIOD,     // Set period of channel timer
+            CMD_GET_PERIOD      // Get period of channel timer
+        }
+
         private static byte READ = 0x80; // Read modifier
         private static byte WRITE = 0x00; // write modifier
         public static byte OUTPUT_P0 = 0x00;
