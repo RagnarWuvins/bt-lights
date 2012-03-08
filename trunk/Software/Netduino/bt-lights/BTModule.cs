@@ -42,11 +42,21 @@ namespace BTLights
             Write(writeBuffer, 0, writeBuffer.Length);
         }
 
-        public void send2BT(string sendString)
+        public void send2BT(string command)
         {
-            Debug.Print("-> " + sendString);
-            writeBuffer = Encoding.UTF8.GetBytes(sendString + "\r\n");
+            Debug.Print("-> " + command);
+            writeBuffer = Encoding.UTF8.GetBytes(command + "\r\n");
             Write(writeBuffer, 0, writeBuffer.Length);
+        }
+
+        public void send2BT(byte[] command)
+        {
+            byte[] s_command = new byte[command.Length + 2];
+            Array.Copy(command, s_command, command.Length);
+            s_command[command.Length] = 0xD;
+            s_command[command.Length + 1] = 0xA;
+            Debug.Print("-> " + Encoding.UTF8.GetChars(command));
+            Write(s_command, 0, s_command.Length);
         }
 
         public void dump(string[] commands)
@@ -68,7 +78,7 @@ namespace BTLights
             {
                 return;
             }
-            while (BytesToRead > 0)
+            while(BytesToRead > 0)
             {
                 receiveLocked = true;
                 int curBufferLength = BytesToRead;
@@ -79,7 +89,7 @@ namespace BTLights
                 int index2Copy = 0;
                 for (int i = 0; i < curStartIndex; i++)
                 {
-                    if (buffer[i] == '\n')
+                    if (buffer[i] == '\n' && buffer[i-1] == '\r')
                     {
                         Debug.Assert(_readBuffer[bufferIndex][0] == 0, "Buffer overwrite", "Warning, buffer to write not empty");
                         Array.Copy(buffer, index2Copy, _readBuffer[bufferIndex], 0, i - index2Copy - 1);
@@ -104,9 +114,10 @@ namespace BTLights
             receiveLocked = false;
         }
 
-        public string GetCommand(uint bufferIndex)
+        public byte[] GetCommand(uint bufferIndex)
         {
-            string command = new string(Encoding.UTF8.GetChars(_readBuffer[bufferIndex]));
+            byte[] command = new byte[bufferMax];
+            Array.Copy(_readBuffer[bufferIndex],command,bufferMax);
             Array.Clear(_readBuffer[bufferIndex], 0, bufferMax);
             return command;
         }

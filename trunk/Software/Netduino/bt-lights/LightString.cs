@@ -7,7 +7,7 @@ namespace BTLights
     public class LightString
     {
         public byte channel;
-        public int mode = 0, timerPeriod = 50, timerDelay = 0;
+        public int timerPeriod = 50, timerDelay = 0, dimState = Constants.LIM_LOW;
         public byte upperLimit
         {
             get { return _upperLimit; }
@@ -17,9 +17,9 @@ namespace BTLights
                 {
                     _upperLimit = _lowerLimit;
                 }
-                if (value >= 0xFF)
+                if (value >= Constants.LIM_HIGH)
                 {
-                    _upperLimit = 0xFE;
+                    _upperLimit = Constants.LIM_HIGH;
                 }
                 else
                 {
@@ -36,9 +36,9 @@ namespace BTLights
                 {
                     _lowerLimit = _upperLimit;
                 }
-                if (value <= 0x00)
+                if (value <= Constants.LIM_LOW)
                 {
-                    _lowerLimit = 0x01;
+                    _lowerLimit = Constants.LIM_LOW;
                 }
                 else
                 {
@@ -46,13 +46,15 @@ namespace BTLights
                 }
             }
         }
+        public event NativeEventHandler SendData;
 
-        private int _dimState = 0x03, _fadeStep = 0x05;
-        private byte _lowerLimit = 0x03, _upperLimit = 0x80;
+        private int _mode = (int)Constants.MODE.FUNC, _lastMode = (int)Constants.MODE.NOOP,
+            _Value = Constants.LIM_LOW, _lastValue = Constants.LIM_LOW;        
+        private byte _lowerLimit = Constants.LIM_LOW, _upperLimit = Constants.LIM_HIGH;
         private double _m = 1.0/6.0, _b = 5.0/6.0;
         private bool _dimDir = true;
         private byte[] writeBuffer;
-        private byte[] readBuffer;
+        private byte[] readBuffer = new byte[2];
         private SPI _SPIBus;
         /// <summary>
         /// 
@@ -64,8 +66,7 @@ namespace BTLights
             this._SPIBus = SPIBus;
             this.channel = (byte)channel;
 
-            Off();
-            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
+            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), (byte)(Constants.CONF_RUN | Constants.CONF_STAGGER) };
             _SPIBus.Write(writeBuffer);
         }
         /// <summary>
@@ -80,7 +81,6 @@ namespace BTLights
             this.channel = (byte)channel;
             this.timerDelay = timerDelay;
 
-            Off();
             writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
@@ -98,7 +98,6 @@ namespace BTLights
             this.timerDelay = timerDelay;
             this.timerPeriod = timerPeriod;
 
-            Off();
             writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
             _SPIBus.Write(writeBuffer);
         }
@@ -109,21 +108,43 @@ namespace BTLights
             // Set the public mode by bluetooth and this delegate here will call the correct function
             switch (mode)
             {
-                case 0:
-                    //default, do nothing
+                case (int)Constants.MODE.NOOP:
+                    NoOp();
                     break;
-                case 1:
+                case (int)Constants.MODE.DIRECT:
+                    SetDirect();
+                    break;
+                case (int)Constants.MODE.ON:
                     On();
                     break;
-                case 2:
+                case (int)Constants.MODE.OFF:
                     Off();
                     break;
-                case 3:
-                    Fade();
+                case (int)Constants.MODE.FUNC:
+                    Fade(_lowerLimit, _upperLimit);
                     break;
                 default:
                     break;
             }
+        }
+
+        public void Command()
+        {
+            _Value = _lastValue;
+            mode = _lastMode;
+            Debug.Print("Now in last mode" + mode);
+            return;
+        }
+
+        public void NoOp()
+        {
+            return;
+        }
+
+        public void SetDirect()
+        {
+            writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value};
+            _SPIBus.Write(writeBuffer);
         }
 
         // set to on
@@ -131,7 +152,6 @@ namespace BTLights
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_ON };
             _SPIBus.Write(writeBuffer);
-
         }
 
         // set to off
@@ -139,7 +159,6 @@ namespace BTLights
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_OFF };
             _SPIBus.Write(writeBuffer);
-
         }
     
         // set to any value
@@ -153,35 +172,49 @@ namespace BTLights
             }
             set
             {
-                writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)value };
+                _lastValue = _Value;
+                _Value = value > upperLimit ? upperLimit : value;
+                _Value = value < lowerLimit ? lowerLimit : value;
+                writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value };
                 _SPIBus.Write(writeBuffer);
             }
 
         }
 
+        // mode setter and getter
+        public int mode
+        {
+            get { return _mode; }
+            set
+            {
+                _lastMode = _mode;
+                _mode = value; 
+            }
+        }
+
         // fade in and out
-        public void Fade()
+        public void Fade(int ll, int ul)
         {
             if (_dimDir)
             {
-                _dimState += DimCurve(_dimState);
+                dimState += DimCurve(dimState);
             }
             else
             {
-                _dimState -= DimCurve(_dimState);
+                dimState -= DimCurve(dimState);
             }
 
-            if (_dimState <= _lowerLimit)
+            if (dimState <= ll)
             {
-                _dimState = _lowerLimit;
+                dimState = ll;
                 _dimDir = !_dimDir;
             }
-            else if (_dimState >= _upperLimit)
+            else if (dimState >= ul)
             {
-                _dimState = _upperLimit;
+                dimState = ul;
                 _dimDir = !_dimDir;
             }
-            writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_dimState };
+            writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)dimState };
             _SPIBus.Write(writeBuffer);
         }
 

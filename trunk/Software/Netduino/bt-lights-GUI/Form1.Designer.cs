@@ -59,6 +59,8 @@
             this.trackBar3 = new System.Windows.Forms.TrackBar();
             this.trackBar2 = new System.Windows.Forms.TrackBar();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.master_mode = new System.Windows.Forms.ComboBox();
+            this.master_value = new System.Windows.Forms.TrackBar();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -73,13 +75,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.master_value)).BeginInit();
             this.SuspendLayout();
             // 
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.status_connection});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 394);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 540);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(784, 22);
             this.statusStrip1.TabIndex = 0;
@@ -280,7 +283,6 @@
             this.trackBar6.Size = new System.Drawing.Size(45, 236);
             this.trackBar6.TabIndex = 9;
             this.trackBar6.TickFrequency = 15;
-            this.trackBar6.Scroll += new System.EventHandler(this.trackBar6_Scroll);
             // 
             // trackBar7
             // 
@@ -291,7 +293,6 @@
             this.trackBar7.Size = new System.Drawing.Size(45, 236);
             this.trackBar7.TabIndex = 8;
             this.trackBar7.TickFrequency = 15;
-            this.trackBar7.Scroll += new System.EventHandler(this.trackBar7_Scroll);
             // 
             // trackBar8
             // 
@@ -302,7 +303,6 @@
             this.trackBar8.Size = new System.Drawing.Size(45, 236);
             this.trackBar8.TabIndex = 7;
             this.trackBar8.TickFrequency = 15;
-            this.trackBar8.Scroll += new System.EventHandler(this.trackBar8_Scroll);
             // 
             // trackBar9
             // 
@@ -313,7 +313,6 @@
             this.trackBar9.Size = new System.Drawing.Size(45, 236);
             this.trackBar9.TabIndex = 6;
             this.trackBar9.TickFrequency = 15;
-            this.trackBar9.Scroll += new System.EventHandler(this.trackBar9_Scroll);
             // 
             // trackBar10
             // 
@@ -324,7 +323,6 @@
             this.trackBar10.Size = new System.Drawing.Size(45, 236);
             this.trackBar10.TabIndex = 5;
             this.trackBar10.TickFrequency = 15;
-            this.trackBar10.Scroll += new System.EventHandler(this.trackBar10_Scroll);
             // 
             // trackBar5
             // 
@@ -335,7 +333,6 @@
             this.trackBar5.Size = new System.Drawing.Size(45, 236);
             this.trackBar5.TabIndex = 4;
             this.trackBar5.TickFrequency = 15;
-            this.trackBar5.Scroll += new System.EventHandler(this.trackBar5_Scroll);
             // 
             // trackBar4
             // 
@@ -346,7 +343,6 @@
             this.trackBar4.Size = new System.Drawing.Size(45, 236);
             this.trackBar4.TabIndex = 3;
             this.trackBar4.TickFrequency = 15;
-            this.trackBar4.Scroll += new System.EventHandler(this.trackBar4_Scroll);
             // 
             // trackBar3
             // 
@@ -357,7 +353,6 @@
             this.trackBar3.Size = new System.Drawing.Size(45, 236);
             this.trackBar3.TabIndex = 2;
             this.trackBar3.TickFrequency = 15;
-            this.trackBar3.Scroll += new System.EventHandler(this.trackBar3_Scroll);
             // 
             // trackBar2
             // 
@@ -368,7 +363,6 @@
             this.trackBar2.Size = new System.Drawing.Size(45, 236);
             this.trackBar2.TabIndex = 1;
             this.trackBar2.TickFrequency = 15;
-            this.trackBar2.Scroll += new System.EventHandler(this.trackBar2_Scroll);
             // 
             // trackBar1
             // 
@@ -379,13 +373,33 @@
             this.trackBar1.Size = new System.Drawing.Size(45, 236);
             this.trackBar1.TabIndex = 0;
             this.trackBar1.TickFrequency = 15;
-            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            // 
+            // master_mode
+            // 
+            this.master_mode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.master_mode.FormattingEnabled = true;
+            this.master_mode.Location = new System.Drawing.Point(12, 513);
+            this.master_mode.Name = "master_mode";
+            this.master_mode.Size = new System.Drawing.Size(65, 21);
+            this.master_mode.TabIndex = 12;
+            // 
+            // master_value
+            // 
+            this.master_value.Location = new System.Drawing.Point(18, 376);
+            this.master_value.Maximum = 255;
+            this.master_value.Name = "master_value";
+            this.master_value.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.master_value.Size = new System.Drawing.Size(45, 131);
+            this.master_value.TabIndex = 11;
+            this.master_value.TickFrequency = 15;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 416);
+            this.ClientSize = new System.Drawing.Size(784, 562);
+            this.Controls.Add(this.master_mode);
+            this.Controls.Add(this.master_value);
             this.Controls.Add(this.gui_channelSlider);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.statusStrip1);
@@ -412,6 +426,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.master_value)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -449,6 +464,8 @@
         private System.Windows.Forms.ComboBox comboBox3;
         private System.Windows.Forms.ComboBox comboBox4;
         private System.Windows.Forms.ComboBox comboBox2;
+        private System.Windows.Forms.ComboBox master_mode;
+        private System.Windows.Forms.TrackBar master_value;
     }
 }
 

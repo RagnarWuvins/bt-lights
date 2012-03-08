@@ -7,53 +7,54 @@ namespace BTLights
 {
     public class SplitCommand
     {
-        public event NativeEventHandler BTModuleRequest, LightStringRequest;
+        public event NativeEventHandler ChannelRequest, GlobalRequest;
+        public static int _commandCounter = 0;
 
-        private int _cmdClass;
-        private string _command;
-        private static int _commandCounter = 0;
+        //|CLA |MOD |       ADR         |   VAL   |   CRC   | 
+        //|0001|0101|0000|0000|0000|0001|0000|0000|0000|0006|
 
-        public SplitCommand(int cmdClass, string command)
+        private byte _class;
+        private int _globalcmd, _address;
+        private byte _mode;
+        private int _value;
+        private int _crc;        
+        private bool _internalCmd = true;
+
+        public SplitCommand(byte[] command)
         {
-            this._cmdClass = cmdClass;
-            this._command = command.Substring(3);
+            this._class = (byte)(command[0] >> 4);
+            this._mode = (byte)(command[0] & 0x0F);
+            this._address = ((int)command[1] << 8) | (int)command[2];
+            this._globalcmd = this._address;
+            this._value = command[3];
+            this._crc = command[0] + command[3];
+            // check if the command comes from the BT board or user. Unfortunately the
+            // CRC can be bigger than a byte, that's why we add 0x100 for the checksum
+            _internalCmd = 
+                (command[4] == this._crc || 
+                (command[4] + 0x100) == this._crc) ? true : false; 
+            if (!_internalCmd)
+            {
+                Debug.Print("<- " + new string(Encoding.UTF8.GetChars(command)));
+            }
         }
 
         public void ThreadProc()
         {
+            if (!_internalCmd)
+            {               
+                return;
+            }
             _commandCounter++;
-
-            switch(_cmdClass)
+            
+            switch(_class)
             {
-                case 1:
-                    int channel = Convert.ToInt32(_command.Substring(2, 2));
-                    this._command = this._command.Substring(2);
-                    try
-                    {
-                        int valInd = _command.IndexOf("value");
-                        int modInd = _command.IndexOf("mode");
-                        bool ccQuery = (_command.IndexOf("?") > 0) ? true : false;
-                        int value = 0;                        
-                        if (valInd == 0 & !ccQuery)
-                        {
-                            value = Convert.ToInt32(_command.Substring(6, 3));
-                            uint channelValue = (uint)channel << 8 | (uint)value;
-                            LightStringRequest((uint)Constants.LS_COMMANDS.CMD_SET_VALUE, channelValue, DateTime.Now);
-                        }
-                        if (modInd >= 0 & !ccQuery)
-                        {
-                            value = Convert.ToInt32(_command.Substring(5, 3));
-                            uint channelMode = (uint)channel << 8 | (uint)value;
-                            LightStringRequest((uint)Constants.LS_COMMANDS.CMD_MODE, channelMode, DateTime.Now);
-                        }
-                    }
-                    catch (Exception exp)
-                    {
-                        Debug.Print("FW_ERROR(" + Constants.FW_ERRORS.CMD_CORRUPT + "), " + exp.Message);
-                    }
+                case (int)Constants.CLASS.CC_CMD:
+
+                    ChannelRequest(((uint)this._mode << Constants.G_MAX_ADDRESS | (uint)this._address), (uint)this._value, DateTime.Now);
                     break;
-                case 2:
-                    if (_command == "gc+clearcommandcounter")
+                case (int)Constants.CLASS.GC_CMD:
+                    /*if (_command == "gc+clearcommandcounter")
                     {
                         BTModuleRequest((uint)Constants.BT_COMMANDS.CMD_ACK, (uint)_commandCounter, DateTime.Now);
                         _commandCounter = 0;
@@ -65,11 +66,11 @@ namespace BTLights
                     if (_command == "gc+cpu?")
                     {
                         BTModuleRequest((uint)Constants.BT_COMMANDS.CMD_CPU, 0, DateTime.Now);
-                    }
+                    }*/
                     break;
-                case 3:
+                case (int)Constants.CLASS.AT_CMD:
                     break;
-                case 4:
+                case (int)Constants.CLASS.DP_CMD:
                     break;
                 default:
                     break;
