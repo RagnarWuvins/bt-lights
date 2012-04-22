@@ -18,6 +18,8 @@ namespace BTLights
         public static LightStringCollection channels;
         public static BTModule _BT;
 
+        private static OutputPort _LED = new OutputPort(Pins.ONBOARD_LED, false);
+
         public static void Main()
         {
             // Setup the SPI interface. I guttenberged these settings from some tutorial and got the correct values by try and error.
@@ -38,6 +40,7 @@ namespace BTLights
             // setting up the serial port for the communication to the BT module
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One, Pins.GPIO_PIN_D2);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
+            _BT.BufferOverflow += new NativeEventHandler(DebugChannel);
             // Only for first initialization. Damn got no EEProm to save that state?!
             _BT.dump(Constants.BT_INIT);
             //_BT.send2BT("at+reset");
@@ -56,7 +59,7 @@ namespace BTLights
                 value >>= 8;
             }
             data[4] = (byte)crc;
-            _BT.send2BT(data); //Test: 12 00 01 00 03
+            _BT.send2BT(data);
         }
 
         public static void GlobalCommandHandler(uint btCmd, uint value, DateTime time)
@@ -76,6 +79,11 @@ namespace BTLights
                     break;
             }
             _BT.send2BT("ACK");
+        }
+
+        public static void DebugChannel(uint i, uint j, DateTime time)
+        {
+            _BT.send2BT(Convert.ToByteArray(i));
         }
 
         public static void CommandHandler(uint bufferIndex, uint j, DateTime time)

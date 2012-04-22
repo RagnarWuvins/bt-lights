@@ -20,6 +20,7 @@ namespace bt_lights_GUI
         {
             //_serial.Open();
             _serial.DataReceived += new SerialDataReceivedEventHandler(dataReceived);
+            CheckForIllegalCrossThreadCalls = false; 
             InitializeComponent();
             gui_channelSlider.Enabled = false;
             var cbs = gui_channelSlider.Controls.OfType<ComboBox>();
@@ -80,7 +81,7 @@ namespace bt_lights_GUI
                 try
                 {
                     _serial.Open();
-                    sendChannelValue(0xFFFF, (int)BTLights.Constants.MODE.GET, 0, true);
+                    sendChannelValue(0xFFFF, (int)BTLights.Constants.MODE.CMD_GET_VAL, 0, true);
                     conState = "connected";
                     gui_channelSlider.Enabled = true;
                 }
@@ -150,8 +151,16 @@ namespace bt_lights_GUI
         }
 
         private void dataReceived(object sender, SerialDataReceivedEventArgs args)
-        {           
-            Console.WriteLine(_serial.ReadLine());
+        {
+            string command = _serial.ReadLine();
+            System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
+            byte[] receivedCommand = enc.GetBytes(command);
+            Console.WriteLine(command);           
+        }
+
+        private void outputBox_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

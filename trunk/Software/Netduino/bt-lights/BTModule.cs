@@ -12,7 +12,7 @@ namespace BTLights
     {
         private OutputPort _atPin;
         public string commandBuffer = "";
-        public event NativeEventHandler CommandReceived;
+        public event NativeEventHandler CommandReceived, BufferOverflow;
 
         const int bufferMax = 2048;
         const int numOfBuffer = 2;
@@ -71,7 +71,7 @@ namespace BTLights
             _atPin.Write(false);
         }
 
-
+        // Interrupt on incoming command. Should be outsourced to another thread!
         private void receiveBT(object sender, SerialDataReceivedEventArgs e)
         {
             if (receiveLocked)
@@ -79,11 +79,16 @@ namespace BTLights
                 return;
             }
             while(BytesToRead > 0)
-            {
+            {                
                 receiveLocked = true;
                 int curBufferLength = BytesToRead;
                 byte[] temp = new byte[curBufferLength];
                 Read(temp, 0, curBufferLength);
+                BufferOverflow((uint)(curStartIndex + curBufferLength), 0, DateTime.Now);
+                if (curStartIndex + curBufferLength >= bufferMax)
+                {
+                    
+                }
                 Array.Copy(temp, 0, buffer, curStartIndex, curBufferLength);
                 curStartIndex = curBufferLength + curStartIndex;
                 int index2Copy = 0;

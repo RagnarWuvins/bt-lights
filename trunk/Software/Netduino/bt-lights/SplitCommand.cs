@@ -2,6 +2,8 @@ using System;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using System.Text;
+using SecretLabs.NETMF.Hardware;
+using SecretLabs.NETMF.Hardware.Netduino;
 
 namespace BTLights
 {
@@ -21,7 +23,7 @@ namespace BTLights
         private bool _internalCmd = true;
 
         public SplitCommand(byte[] command)
-        {
+        {           
             this._class = (byte)(command[0] >> 4);
             this._mode = (byte)(command[0] & 0x0F);
             this._address = ((int)command[1] << 8) | (int)command[2];
@@ -46,7 +48,6 @@ namespace BTLights
                 return;
             }
             _commandCounter++;
-            
             switch(_class)
             {
                 case (int)Constants.CLASS.CC_CMD:

@@ -61,6 +61,7 @@
             this.trackBar1 = new System.Windows.Forms.TrackBar();
             this.master_mode = new System.Windows.Forms.ComboBox();
             this.master_value = new System.Windows.Forms.TrackBar();
+            this.outputBox = new System.Windows.Forms.TextBox();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -393,11 +394,21 @@
             this.master_value.TabIndex = 11;
             this.master_value.TickFrequency = 15;
             // 
+            // outputBox
+            // 
+            this.outputBox.Location = new System.Drawing.Point(183, 385);
+            this.outputBox.Multiline = true;
+            this.outputBox.Name = "outputBox";
+            this.outputBox.Size = new System.Drawing.Size(588, 148);
+            this.outputBox.TabIndex = 13;
+            this.outputBox.TextChanged += new System.EventHandler(this.outputBox_TextChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 562);
+            this.Controls.Add(this.outputBox);
             this.Controls.Add(this.master_mode);
             this.Controls.Add(this.master_value);
             this.Controls.Add(this.gui_channelSlider);
@@ -466,6 +477,7 @@
         private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.ComboBox master_mode;
         private System.Windows.Forms.TrackBar master_value;
+        private System.Windows.Forms.TextBox outputBox;
     }
 }
 
