@@ -10,8 +10,10 @@ namespace BTLights
     {
         #region Global const definition block
         public static int G_MAX_ADDRESS     = 16;           // number of maximum addresses
-        public static int G_SET_ADDRESS     = 10;           // number of given addresses
+        public static int G_SET_ADDRESS     = 10;           // number of given addresses = number of channels
+        public static int G_MAX_CHANNELS = G_SET_ADDRESS;   // number of channels
         public static int G_CHANNEL_ADR_MASK    = 0xFFFF;   // mask for the address part
+        public static int C_LENGTH = 0x07; // Command length incl \n\r
 
         public enum FW_ERRORS
         {
@@ -21,11 +23,11 @@ namespace BTLights
 
         public enum CLASS
         {
-            CC_CMD = 1, // Channel command
+            CC_CMD,     // Channel command
             GC_CMD,     // global command
             AT_CMD,     // at command
             DP_CMD,     // direct port command
-            NUM_CMD     // total number of commands
+            CMD_NUM,    // total number of commands
         };
 
         public enum MODE
@@ -42,6 +44,7 @@ namespace BTLights
             CMD_SET_DELAY,    // set the timer delay
             CMD_SET_PERIOD, // set the timer period
             CMD_RESTART,    // restart the timer
+            CMD_NUM,    // Number of commands must be end of enum
         }
 
         public enum COMMANDS
@@ -60,6 +63,7 @@ namespace BTLights
             CMD_GC_CPU,         
             CMD_ERROR,
             CMD_ACK,
+            CMD_NUM,    // Number of commands must be end of enum
         };
         #endregion
 
