@@ -2,20 +2,23 @@
 BT Lights Serial Protocol (2.0)
 
 Command classes (4bit)[0:3]:
-channel		=	0x01	single channel command
-global		=	0x02	global setting command
-at cmd		=	0x03	AT command for the BT chip
-port		=	0x04	direct port command that controls netduino functions
+channel		=	0x00	single channel command
+global		=	0x01	global setting command
+at cmd		=	0x02	AT command for the BT chip
+port		=	0x03	direct port command that controls netduino functions
 
 Channel mode (4bit)[4:7]:
 No Change 	=	0x00	no change of current mode
-Set			=	0x01	set value
-Get			=	0x02	get value
-Max			=	0x03	set max value
-Min			=	0x04	get max value
-Mode1		=	0x05	set Mode1 (Fade)
-Mode2		=	0x06	set Mode2 (Sweep In)
-Mode3		= 	0x07	set Mode3 (Sweep Out)
+Direct Mode	=	0x01	set value
+On			=	0x02	set to On
+Off			=	0x03	set to off
+Func		=	0x04	set a preprogrammed function
+Get value	=	0x05	Get value of channel(s)
+Set Max		=	0x06	set maximum value of channel(s)
+Set Min		= 	0x07	set minimum value of channel(s)
+Set Delay	= 	0x08	set delay value of channel(s)
+Set Period	= 	0x09	set period value of channel(s)
+Restart		= 	0x0A	restart timer of channel(s)
 
 Address (16bit)[8:23]:
 Channels can be address by a seperate bit in the command. Thus making it possible to send
@@ -27,11 +30,12 @@ Channel value (8bit)[24:31]:
 All values from 0 to 255
 
 CRC (8bit)[32:39]
-The CRC is the sum of CLA, MOD and VAL
+The CRC is the sum of CLA, MOD and VAL (has an overflow so this is not a real CRC)
 
 
 Example:
 Set channel 1 to fade (value doesn't matter)
 
-|CLA |MOD |       ADR         |   VAL   |   CRC   | 
-|0001|0101|0000|0000|0000|0001|0000|0000|0000|0006|
+|CLA |MOD |       ADR         |   VAL   |   CRC   |
+|0000|0100|0000|0000|0000|0001|0000|0000|0000|0100|
+|  byte 0 |  byte 1 |  byte 2 |  byte 3 |  byte 4 |

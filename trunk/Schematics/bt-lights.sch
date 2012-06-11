@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="no" active="no"/>
@@ -4397,6 +4397,7 @@ type RDH, grid 15 mm</description>
 <part name="+3V2" library="supply1" deviceset="+3V3" device=""/>
 <part name="+3V3" library="supply1" deviceset="+3V3" device=""/>
 <part name="GND3" library="supply1" deviceset="GND" device=""/>
+<part name="R11" library="resistor" deviceset="R-EU_" device="0207/7" value="10k"/>
 </parts>
 <sheets>
 <sheet>
@@ -4446,6 +4447,7 @@ type RDH, grid 15 mm</description>
 <instance part="+3V2" gate="G$1" x="20.32" y="83.82"/>
 <instance part="+3V3" gate="G$1" x="68.58" y="101.6"/>
 <instance part="GND3" gate="1" x="119.38" y="30.48"/>
+<instance part="R11" gate="G$1" x="127" y="43.18" rot="R90"/>
 </instances>
 <busses>
 <bus name="PWM_INPUT_BUS">
@@ -4503,6 +4505,9 @@ type RDH, grid 15 mm</description>
 <junction x="119.38" y="40.64"/>
 <junction x="119.38" y="38.1"/>
 <junction x="119.38" y="35.56"/>
+<pinref part="R11" gate="G$1" pin="1"/>
+<wire x1="127" y1="38.1" x2="127" y2="35.56" width="0.1524" layer="91"/>
+<wire x1="127" y1="35.56" x2="119.38" y2="35.56" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="+5V" class="0">
@@ -5033,8 +5038,12 @@ type RDH, grid 15 mm</description>
 </segment>
 <segment>
 <pinref part="BT_INTERFACE" gate="G$1" pin="PIO11"/>
-<wire x1="114.3" y1="53.34" x2="119.38" y2="53.34" width="0.1524" layer="91"/>
-<label x="119.38" y="53.34" size="1.016" layer="95" font="vector" xref="yes"/>
+<wire x1="114.3" y1="53.34" x2="127" y2="53.34" width="0.1524" layer="91"/>
+<label x="129.54" y="53.34" size="1.016" layer="95" font="vector" xref="yes"/>
+<pinref part="R11" gate="G$1" pin="2"/>
+<wire x1="127" y1="53.34" x2="129.54" y2="53.34" width="0.1524" layer="91"/>
+<wire x1="127" y1="53.34" x2="127" y2="48.26" width="0.1524" layer="91"/>
+<junction x="127" y="53.34"/>
 </segment>
 </net>
 <net name="RX" class="0">

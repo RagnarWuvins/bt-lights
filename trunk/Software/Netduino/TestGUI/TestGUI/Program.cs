@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO.Ports;
+using BTLights;
 
-namespace WindowsFormsApplication1
+namespace BluetoothLights
 {
     static class Program
     {
@@ -18,7 +19,9 @@ namespace WindowsFormsApplication1
             Application.SetCompatibleTextRenderingDefault(false);
             if (true)
             {
-                Application.Run(new controller(new SerialPort("COM22", 38400)));
+                SerialPort srl = new SerialPort("COM31", Constants.BAUDRATE);
+                srl.NewLine = "\r\n";
+                Application.Run(new controller(srl));
             }
             else
             {

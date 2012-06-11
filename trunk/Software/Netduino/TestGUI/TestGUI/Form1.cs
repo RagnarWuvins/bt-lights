@@ -7,8 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO.Ports;
+using BTLights;
 
-namespace WindowsFormsApplication1
+namespace BluetoothLights
 {
     public partial class Form1 : Form
     {
@@ -41,7 +42,7 @@ namespace WindowsFormsApplication1
             {
                 if (!_srl.IsOpen)
                 {
-                    _srl.BaudRate = 38400;
+                    _srl.BaudRate = Constants.BAUDRATE;
                     _srl.PortName = ports.SelectedItem.ToString();
                     _srl.Open();
                     _ctrl = new controller(_srl);

@@ -1,4 +1,4 @@
-﻿namespace WindowsFormsApplication1
+﻿namespace BluetoothLights
 {
     partial class controller
     {
@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(controller));
             this.SuspendLayout();
             // 
             // controller
@@ -35,6 +36,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 262);
+            this.Icon = (System.Drawing.Icon)SharedRessources.meister_lampe;
             this.Name = "controller";
             this.Text = "controller";
             this.ResumeLayout(false);

@@ -34,10 +34,18 @@ namespace BTLights
             // CRC can be bigger than a byte, that's why we add 0x100 for the checksum
             _internalCmd = 
                 (command[4] == this._crc || 
-                (command[4] + 0x100) == this._crc) ? true : false; 
-            if (!_internalCmd)
+                (command[4] + 0x100) == this._crc) ? true : false;
+            if (_internalCmd)
             {
-                Debug.Print("<- " + new string(Encoding.UTF8.GetChars(command)));
+                Debug.Print("IN: Address: " + (command[1] << 8 | command[2]) + " Value: " + command[3]);
+            }
+            else
+            {
+#if RELEASE
+                Program.THROW_ERROR(Constants.FW_ERRORS.CMD_CORRUPT);
+#else
+                Debug.Print("IN: Stringcommand: " + new string(Encoding.UTF8.GetChars(command)));
+#endif
             }
         }
 
@@ -51,23 +59,10 @@ namespace BTLights
             switch(_class)
             {
                 case (int)Constants.CLASS.CC_CMD:
-
                     ChannelRequest(((uint)this._mode << Constants.G_MAX_ADDRESS | (uint)this._address), (uint)this._value, DateTime.Now);
                     break;
                 case (int)Constants.CLASS.GC_CMD:
-                    /*if (_command == "gc+clearcommandcounter")
-                    {
-                        BTModuleRequest((uint)Constants.BT_COMMANDS.CMD_ACK, (uint)_commandCounter, DateTime.Now);
-                        _commandCounter = 0;
-                    }
-                    if (_command == "gc+commandsreceived?")
-                    {
-                        BTModuleRequest((uint)Constants.BT_COMMANDS.CMD_COMMANDCOUNTER, (uint)_commandCounter, DateTime.Now);
-                    }
-                    if (_command == "gc+cpu?")
-                    {
-                        BTModuleRequest((uint)Constants.BT_COMMANDS.CMD_CPU, 0, DateTime.Now);
-                    }*/
+                    GlobalRequest(((uint)this._mode << Constants.G_MAX_ADDRESS | (uint)this._address), (uint)this._value, DateTime.Now);
                     break;
                 case (int)Constants.CLASS.AT_CMD:
                     break;

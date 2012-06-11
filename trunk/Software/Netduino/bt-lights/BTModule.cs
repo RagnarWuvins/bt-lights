@@ -10,16 +10,13 @@ namespace BTLights
 {
     public class BTModule : SerialPort
     {
-        private OutputPort _atPin;
-        public event NativeEventHandler CommandReceived, BufferOverflow;
+        public OutputPort _atPin;
+        public event NativeEventHandler CommandReceived = null;
         public static byte[] _readBuffer = new Byte[bufferMax];
 
         const int bufferMax = 512;
         const int numOfBuffer = 2;
-        static int curStartIndex = 0;
-        static bool receiveLocked = false;
-        
-        private static int _readIndex = 0;
+
         private static int _writeIndex = 0;
         private static byte[] _writeBuffer;
 
@@ -39,10 +36,41 @@ namespace BTLights
 
         public void send2BT(string command)
         {
-            Debug.Print("-> " + command);
+            Debug.Print("OUT: Stringcommand: " + command);
             _writeBuffer = Encoding.UTF8.GetBytes(command + "\r\n");
             Write(_writeBuffer, 0, _writeBuffer.Length);
         }
+
+        public void send2BT(int command)
+        {
+            _writeBuffer = new byte[Constants.C_LENGTH];
+            Debug.Print("OUT: Integer: " + command);
+            // max length of int is 4 byte :/
+            for (int i = 0; i < 4 ; ++i)
+            {
+                byte temp = (byte)((command >> i * 8) & 0xFF);
+                _writeBuffer[Constants.C_LENGTH - i - 3] = temp;
+            }
+            _writeBuffer[Constants.C_LENGTH - 2] = 0xD;
+            _writeBuffer[Constants.C_LENGTH - 1] = 0xA;
+            Write(_writeBuffer, 0, _writeBuffer.Length);
+        }
+
+        public void send2BT(uint command)
+        {
+            _writeBuffer = new byte[Constants.C_LENGTH];
+            Debug.Print("OUT: Integer: " + command);
+            // max length of int is 4 byte :/
+            for (int i = 0; i < 4; ++i)
+            {
+                byte temp = (byte)((command >> i * 8) & 0xFF);
+                _writeBuffer[Constants.C_LENGTH - i - 3] = temp;
+            }
+            _writeBuffer[Constants.C_LENGTH - 2] = 0xD;
+            _writeBuffer[Constants.C_LENGTH - 1] = 0xA;
+            Write(_writeBuffer, 0, _writeBuffer.Length);
+        }
+
 
         public void send2BT(byte[] command)
         {
@@ -50,7 +78,7 @@ namespace BTLights
             Array.Copy(command, s_command, command.Length);
             s_command[command.Length] = 0xD;
             s_command[command.Length + 1] = 0xA;
-            Debug.Print("-> " + Encoding.UTF8.GetChars(command));
+            Debug.Print("OUT: Address: " + (command[1] << 8 | command[2]) + " Value: " + command[3]);
             Write(s_command, 0, s_command.Length);
         }
 
@@ -66,24 +94,37 @@ namespace BTLights
             _atPin.Write(false);
         }
 
+        // This is the IRQ handler that signals the main routine that a command is there
         private void receiveBT(object sender, SerialDataReceivedEventArgs e)
         {
             int curBufferLength = BytesToRead;
+            Debug.Print("buffer length: " + curBufferLength);
             Read(_readBuffer, _writeIndex, curBufferLength);
             _writeIndex += curBufferLength;
             if (_writeIndex >= Constants.C_LENGTH)
             {
-                CommandReceived(0, 0, DateTime.Now);
-            }
+                CommandReceived((uint)_writeIndex, 0, DateTime.Now);                
+            }            
         }
 
+        // The main routine is interested in the command so we'll pass it over
         public byte[] GetCommand(uint _none)
         {
             byte[] command = new Byte[Constants.C_LENGTH];
             Array.Copy(_readBuffer, command, Constants.C_LENGTH);
-            //Array.Clear(_readBuffer[bufferIndex], 0, bufferMax);
             _writeIndex = 0;
+            flushBuffer();
             return command;
+        }
+
+        public void flushBuffer(bool readBufOnly = false)
+        {
+            _readBuffer = new byte[bufferMax];
+            if (!readBufOnly)
+            {
+                _writeBuffer = new byte[Constants.C_LENGTH];
+                _writeIndex = 0;
+            }
         }
     }
 }

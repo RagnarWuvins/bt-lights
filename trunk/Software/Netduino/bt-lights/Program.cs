@@ -17,11 +17,21 @@ namespace BTLights
         public static int commandCounter = 0;
         public static LightStringCollection channels;
         public static BTModule _BT;
-
+        public static bool _ledState = false;
+        public struct Errorlog
+        {
+            public int[] log;
+            public int logIndex;
+        }
+        public static Errorlog errorlog;
         private static OutputPort _LED = new OutputPort(Pins.ONBOARD_LED, false);
 
         public static void Main()
         {
+            // Create a new error log. Since the Netduino has no EEPROM this is a RAM solution :/
+            errorlog = new Errorlog();
+            errorlog.logIndex = 0;
+            errorlog.log = new int[Constants.ERROR_LOG_LENGTH];
             // Setup the SPI interface. I guttenberged these settings from some tutorial and got the correct values by try and error.
             // Afterwards I found out they were documented in the MAX6966 documentation :/
             _MAX = new SPI.Configuration(
@@ -37,16 +47,20 @@ namespace BTLights
 
             _SPIBus = new SPI(_MAX);
 
+            // define the channels and the handler.
+            channels = new LightStringCollection(Constants.G_SET_ADDRESS, _SPIBus);
+            channels.SendChannelData += new NativeEventHandler(SendChannelData);
+
             // setting up the serial port for the communication to the BT module
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One, Pins.GPIO_PIN_D2);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
-            _BT.BufferOverflow += new NativeEventHandler(DebugChannel);
             // Only for first initialization. Damn got no EEProm to save that state?!
-            _BT.dump(Constants.BT_INIT);
+            _BT.dump(Constants.BT_INIT_SLOW);
             //_BT.send2BT("at+reset");
 
-            channels = new LightStringCollection(Constants.G_SET_ADDRESS, _SPIBus);
-            channels.SendChannelData += new NativeEventHandler(SendChannelData);
+            _BT.flushBuffer();  //flush the buffers after init to interact with user hassle free
+
+
             Thread.Sleep(-1);
         }
 
@@ -64,40 +78,66 @@ namespace BTLights
 
         public static void GlobalCommandHandler(uint btCmd, uint value, DateTime time)
         {
-            switch (btCmd)
+            int channel = (int)(btCmd & Constants.G_CHANNEL_ADR_MASK);
+            int mode = ((int)btCmd >> Constants.G_MAX_ADDRESS);
+            switch (mode)
             {
-                case (uint)Constants.COMMANDS.CMD_GC_GET_CC:
-                    _BT.send2BT(value.ToString());
+                case (int)Constants.COMMANDS.CMD_GC_GET_CC:
+                    _BT.send2BT(SplitCommand._commandCounter);
                     break;
-                case (uint)Constants.COMMANDS.CMD_GC_RESET_CC:
+                case (int)Constants.COMMANDS.CMD_GC_RESET_CC:
                     SplitCommand._commandCounter = 0;
                     break;
-                case (uint)Constants.COMMANDS.CMD_GC_CPU:
-                    _BT.send2BT(Cpu.SystemClock.ToString());
+                case (int)Constants.COMMANDS.CMD_GC_CPU:
+                    _BT.send2BT(Cpu.SystemClock);
+                    break;
+                case (int) Constants.COMMANDS.CMD_ERROR:
+                    for(int i = 0; i < errorlog.logIndex; i++)
+                    {
+                        _BT.send2BT(errorlog.log[i]);
+                    }
                     break;
                 default:
                     break;
             }
-            _BT.send2BT("ACK");
         }
 
-        public static void DebugChannel(uint i, uint j, DateTime time)
+        public static void THROW_ERROR(object error)
         {
-            _BT.send2BT(Convert.ToByteArray(i));
+            errorlog.log[errorlog.logIndex] = (int)error << 16 | System.DateTime.Now.Second;
+            if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH)
+            {
+                errorlog.logIndex++;
+            }
+            else
+            {
+                errorlog.logIndex = 0;
+            }
+            string errorString = "FW ERROR OCCURRED: " + (int)error;
+            Debug.Print(errorString);
+            _ledState = !_ledState;
+            _LED.Write(_ledState);
+            //_BT.send2BT(errorString);
         }
 
-        public static void CommandHandler(uint bufferIndex, uint j, DateTime time)
+        public static void CommandHandler(uint writeIndex, uint j, DateTime time)
         {
-            byte[] _command = _BT.GetCommand(bufferIndex);
+            
+            byte[] _command = _BT.GetCommand(writeIndex);
             if (_command == null)
             {
                 return;
+            }
+            if (writeIndex > Constants.C_LENGTH)
+            {
+                THROW_ERROR(Constants.FW_ERRORS.BUFFER_OFERFLOW);
             }
             SplitCommand sc = new SplitCommand(_command);
             sc.ChannelRequest += new NativeEventHandler(channels.ChannelCommandHandler);
             sc.GlobalRequest += new NativeEventHandler(GlobalCommandHandler);
             Thread splitter = new Thread(new ThreadStart(sc.ThreadProc));
             splitter.Start();
+            //_BT.Acknowledge();
         }        
     }   
 }

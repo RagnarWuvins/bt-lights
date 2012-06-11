@@ -7,7 +7,7 @@ namespace BTLights
     public class LightString
     {
         public byte channel;
-        public int timerPeriod = 50, timerDelay = 0, dimState = Constants.LIM_LOW;
+        public int timerPeriod = 50, timerDelay = 0, dimState = Constants.LIM_LOW, functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;
         public byte upperLimit
         {
             get { return _upperLimit; }
@@ -46,12 +46,12 @@ namespace BTLights
                 }
             }
         }
-        public event NativeEventHandler SendData;
+        public double rise = 6.0;
+        public double offset = 6.0;
 
         private int _mode = (int)Constants.MODE.FUNC, _lastMode = (int)Constants.MODE.NOOP,
             _Value = Constants.LIM_LOW, _lastValue = Constants.LIM_LOW;        
         private byte _lowerLimit = Constants.LIM_LOW, _upperLimit = Constants.LIM_HIGH;
-        private double _m = 1.0/6.0, _b = 5.0/6.0;
         private bool _dimDir = true;
         private byte[] writeBuffer;
         private byte[] readBuffer = new byte[2];
@@ -121,19 +121,28 @@ namespace BTLights
                     Off();
                     break;
                 case (int)Constants.MODE.FUNC:
-                    Fade(_lowerLimit, _upperLimit);
+                    switch (functionIndex)
+                    {
+                        case (int)Constants.FUNCTIONS.FUNC_FADE:
+                            Fade(_lowerLimit, _upperLimit);
+                            break;
+                        case (int)Constants.FUNCTIONS.FUNC_SAW:
+                            Saw(_lowerLimit, _upperLimit);
+                            break;
+                        case (int)Constants.FUNCTIONS.FUNC_SAW_REV:
+                            Saw_rev(_lowerLimit, _upperLimit);
+                            break;
+                        default:
+                            Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
+#if DEBUG
+                            Debug.Print("Wrong function index: " + functionIndex);
+#endif
+                            break;
+                    }
                     break;
                 default:
                     break;
             }
-        }
-
-        public void Command()
-        {
-            _Value = _lastValue;
-            mode = _lastMode;
-            Debug.Print("Now in last mode" + mode);
-            return;
         }
 
         public void NoOp()
@@ -147,14 +156,14 @@ namespace BTLights
             _SPIBus.Write(writeBuffer);
         }
 
-        // set to on
+        // set to on (cannot be set by Value variable, because out of range!)
         public void On()
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_ON };
             _SPIBus.Write(writeBuffer);
         }
 
-        // set to off
+        // set to off  (cannot be set by Value variable, because out of range!)
         public void Off()
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_OFF };
@@ -166,9 +175,10 @@ namespace BTLights
         {
             get
             {
-                writeBuffer = new byte[] { Constants.Read((byte)channel), 0 };
-                _SPIBus.WriteRead(writeBuffer, readBuffer);
-                return readBuffer[1];
+                //writeBuffer = new byte[] { Constants.Read((byte)channel), 0 };
+                //_SPIBus.WriteRead(writeBuffer, readBuffer);
+                //return readBuffer[1];
+                return _Value;
             }
             set
             {
@@ -214,13 +224,37 @@ namespace BTLights
                 dimState = ul;
                 _dimDir = !_dimDir;
             }
-            writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)dimState };
-            _SPIBus.Write(writeBuffer);
+            Value = dimState;
+        }
+
+        // fade in and go to lowerlimit
+        public void Saw(int ll, int ul)
+        {
+            dimState += DimCurve(dimState);
+            if (dimState >= ul)
+            {
+                dimState = ll;
+            }
+            Value = dimState;
+        }
+
+        // fade out and go to upperlimit
+        public void Saw_rev(int ll, int ul)
+        {
+            dimState -= DimCurve(dimState);
+            if (dimState <= ll)
+            {
+                dimState = ul;
+            }
+            Value = dimState;
         }
 
         private int DimCurve(int x)
         {
-            double curve = _m * x + _b;
+            //private double _m = 1.0 / this.rise, _b = 5.0 / this.offset;
+            this.rise = this.rise == 0 ? 1 : this.rise;
+            this.offset = this.offset == 0 ? 1 : this.offset;
+            double curve = (1.0 / this.rise) * x + (5.0 / this.offset);
             return (int)curve;
         }
     }

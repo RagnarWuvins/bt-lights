@@ -1,4 +1,4 @@
-﻿namespace WindowsFormsApplication1
+﻿namespace BluetoothLights
 {
     partial class Form1
     {
@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.connect = new System.Windows.Forms.Button();
             this.ports = new System.Windows.Forms.ComboBox();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
@@ -77,6 +78,7 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.ports);
             this.Controls.Add(this.connect);
+            this.Icon = (System.Drawing.Icon)SharedRessources.meister_lampe;
             this.Name = "Form1";
             this.Text = "Form1";
             this.statusStrip1.ResumeLayout(false);
