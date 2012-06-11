@@ -6,6 +6,7 @@ namespace BTLights
 {
     public class LightString
     {
+        //TODO: constants for default values
         public byte channel;
         public int timerPeriod = 50, timerDelay = 0, dimState = Constants.LIM_LOW, functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;
         public byte upperLimit
@@ -102,6 +103,16 @@ namespace BTLights
             _SPIBus.Write(writeBuffer);
         }
 
+        // reset channel
+        public void Clear()
+        {
+            this.timerDelay = 0;
+            this.timerPeriod = 50;
+            this.dimState = Constants.LIM_LOW;
+            this.functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;       
+            this.rise = 6.0;
+            this.offset = 6.0;
+        }
         // Delegate for timer
         public void ModeSelector(object modeInfo)
         {

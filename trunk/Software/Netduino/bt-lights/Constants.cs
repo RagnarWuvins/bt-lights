@@ -2,6 +2,7 @@
 #if TARGET
 using System;
 using Microsoft.SPOT;
+using SecretLabs.NETMF.Hardware.Netduino;
 #endif
 
 namespace BTLights
@@ -16,6 +17,11 @@ namespace BTLights
         public static int C_LENGTH = 0x07; // Command length incl \n\r
         public static int BAUDRATE = 38400; // Global baudrate
         public static int ERROR_LOG_LENGTH = 256; // Length of error log
+#if TARGET
+        public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2; // AT pin to switch to bluetooth service commands
+        public static Microsoft.SPOT.Hardware.Cpu.Pin PWM = Pins.GPIO_PIN_D9;   // PWM pin to control the PWM clock of the SPI module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin RESET = Pins.GPIO_PIN_D8; // Reset pin (low activ) to reset the BT module
+#endif
 
         public enum FW_ERRORS
         {
@@ -59,6 +65,8 @@ namespace BTLights
             CMD_GC_RESET_CC,       // Reset the command counter
             CMD_GC_CPU, // get the current cpu usage
             CMD_ERROR, // trace out the error log
+            CMD_INC_PWM,    // increase PWM by 10 until 200 then go back to 10
+            CMD_RESET_ALL,  // reset all channels
             CMD_ACK,
             CMD_NUM,    // Number of commands must be end of enum
         };
@@ -140,6 +148,7 @@ namespace BTLights
         public const byte CONF_CSRUN = 0x02; // run current config on CS
         public const byte CONF_STAGGER = 0x20; // Ports out of phase
         public const byte CONF_PHASE = 0x00; // Ports in phase
+        public const byte CONF_OSC = 0x80;  // MISO is used as PWM input
 
         public const byte CONFIGURATION = 0x10;
 

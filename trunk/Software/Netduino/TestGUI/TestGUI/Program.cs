@@ -19,7 +19,7 @@ namespace BluetoothLights
             Application.SetCompatibleTextRenderingDefault(false);
             if (true)
             {
-                SerialPort srl = new SerialPort("COM31", Constants.BAUDRATE);
+                SerialPort srl = new SerialPort("COM22", Constants.BAUDRATE);
                 srl.NewLine = "\r\n";
                 Application.Run(new controller(srl));
             }

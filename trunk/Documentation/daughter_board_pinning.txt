@@ -4,6 +4,8 @@ MCU:
 0:  RX Serial (->)
 1:  TX Serial (->)
 2:  AT Pin (BT)
+8:	RESET (BT)
+9:	PWM
 10: Slave select (1)
 11: MOSI
 12: MISO
@@ -11,14 +13,17 @@ MCU:
 
 
 Daughter board:
-
-1: GND			black
-3: 5V			white
-2: 3.3V			gray
-4: Slave Select		purple
-5: MOSI			blue
-6: MISO			green
-7: SCLK			yellow
-8: AT Pin (BT)		orange
-9: RX Serial (<-)	red
-10: TX Serial (<-)	brown
+14: 
+13:
+12: RESET		white
+11: PWM IN		black
+10: GND			black
+9: 5V			white
+8: 3.3V			gray
+7: Slave Select		purple
+6: MOSI			blue
+5: MISO			green
+4: SCLK			yellow
+3: AT Pin (BT)		orange
+2: RX Serial (<-)	red
+1: TX Serial (<-)	brown

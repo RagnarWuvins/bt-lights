@@ -24,7 +24,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>RELEASE, MF_FRAMEWORK_VERSION_V4_1,MF_FRAMEWORK_VERSION_V4_1</DefineConstants>
+    <DefineConstants>RELEASE,TARGET, MF_FRAMEWORK_VERSION_V4_1,MF_FRAMEWORK_VERSION_V4_1,MF_FRAMEWORK_VERSION_V4_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>

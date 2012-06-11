@@ -14,6 +14,8 @@ namespace BTLights
     {
         public static SPI.Configuration _MAX;
         public static SPI _SPIBus;
+        public static PWM _Ext_PWM = new PWM(Constants.PWM); // Init the external PWM for SPI
+        public static uint _PWMRate = 2;
         public static int commandCounter = 0;
         public static LightStringCollection channels;
         public static BTModule _BT;
@@ -45,6 +47,8 @@ namespace BTLights
             SPI_Devices.SPI1    // The used SPI bus (refers to a MOSI MISO and SCLK pinset)
             );
 
+            _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+
             _SPIBus = new SPI(_MAX);
 
             // define the channels and the handler.
@@ -52,11 +56,11 @@ namespace BTLights
             channels.SendChannelData += new NativeEventHandler(SendChannelData);
 
             // setting up the serial port for the communication to the BT module
-            _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One, Pins.GPIO_PIN_D2);
+            _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
             // Only for first initialization. Damn got no EEProm to save that state?!
             _BT.dump(Constants.BT_INIT_SLOW);
-            //_BT.send2BT("at+reset");
+            _BT.Reset(); // make a reset so we can detect the board from all devices
 
             _BT.flushBuffer();  //flush the buffers after init to interact with user hassle free
 
@@ -91,6 +95,20 @@ namespace BTLights
                 case (int)Constants.COMMANDS.CMD_GC_CPU:
                     _BT.send2BT(Cpu.SystemClock);
                     break;
+                case (int)Constants.COMMANDS.CMD_INC_PWM:
+                    if (_PWMRate < 200)
+                    {
+                        _PWMRate += 10;
+                    }
+                    else
+                    {
+                        _PWMRate = 10;
+                    }
+                    _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+                    break;
+                case (int)Constants.COMMANDS.CMD_RESET_ALL:
+                    channels.Invoke();
+                    break;
                 case (int) Constants.COMMANDS.CMD_ERROR:
                     for(int i = 0; i < errorlog.logIndex; i++)
                     {
@@ -105,7 +123,7 @@ namespace BTLights
         public static void THROW_ERROR(object error)
         {
             errorlog.log[errorlog.logIndex] = (int)error << 16 | System.DateTime.Now.Second;
-            if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH)
+            if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH - 1)
             {
                 errorlog.logIndex++;
             }

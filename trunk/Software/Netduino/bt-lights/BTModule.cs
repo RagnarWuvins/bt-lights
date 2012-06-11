@@ -11,6 +11,7 @@ namespace BTLights
     public class BTModule : SerialPort
     {
         public OutputPort _atPin;
+        public OutputPort _resetPin;
         public event NativeEventHandler CommandReceived = null;
         public static byte[] _readBuffer = new Byte[bufferMax];
 
@@ -20,10 +21,11 @@ namespace BTLights
         private static int _writeIndex = 0;
         private static byte[] _writeBuffer;
 
-        public BTModule(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, Cpu.Pin atPin)
+        public BTModule(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
             : base(portName, baudRate, parity, dataBits, stopBits)
         {
-            _atPin = new OutputPort(atPin, false);
+            _atPin = new OutputPort(Constants.ATPIN, false);
+            _resetPin = new OutputPort(Constants.RESET, true);
             Open();
             this.DataReceived += new SerialDataReceivedEventHandler(receiveBT);
         }
@@ -32,6 +34,13 @@ namespace BTLights
         {
             _writeBuffer = Encoding.UTF8.GetBytes("ACK\r\n");
             Write(_writeBuffer, 0, _writeBuffer.Length);
+        }
+
+        public void Reset()
+        {
+            _resetPin.Write(false);
+            Thread.Sleep(1);
+            _resetPin.Write(true);
         }
 
         public void send2BT(string command)

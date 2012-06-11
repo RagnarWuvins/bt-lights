@@ -32,8 +32,14 @@ namespace BTLights
                 channelTimerDelegates[ch] = new TimerCallback(channels[ch].ModeSelector);
                 channelTimers[ch] = new Timer(channelTimerDelegates[ch], null, channels[ch].timerDelay, channels[ch].timerPeriod);
             }
-            _WriteBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
+
+            _WriteBuffer = new byte[] { Constants.Read(Constants.CONFIGURATION), 0x00 };
+            _SPIBus.WriteRead(_WriteBuffer, _ReadBuffer);
+            // run this configuration & apply the external input clock
+            _WriteBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN | Constants.CONF_OSC };
             _SPIBus.Write(_WriteBuffer);
+            _WriteBuffer = new byte[] { Constants.Read(Constants.CONFIGURATION), 0x00 };
+            _SPIBus.WriteRead(_WriteBuffer, _ReadBuffer);
         }
 
         public void ChannelCommandHandler(uint lsCmd, uint value, DateTime time)
@@ -102,6 +108,14 @@ namespace BTLights
                     channels[i].functionIndex = value;
                     channels[i].mode = (int)Constants.MODE.FUNC;
                 }
+            }
+        }
+
+        public void Invoke()
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                channels[i].Clear();
             }
         }
 
