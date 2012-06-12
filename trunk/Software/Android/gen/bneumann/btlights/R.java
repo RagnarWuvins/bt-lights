@@ -12,15 +12,32 @@ public final class R {
     }
     public static final class drawable {
         public static final int ic_launcher=0x7f020000;
+        public static final int icon=0x7f020001;
+    }
+    public static final class id {
+        public static final int mw_about=0x7f050003;
+        public static final int mw_button1=0x7f050001;
+        public static final int mw_button2=0x7f050002;
+        public static final int mw_sequencer=0x7f050000;
     }
     public static final class layout {
-        public static final int main=0x7f030000;
+        public static final int about=0x7f030000;
+        public static final int main=0x7f030001;
     }
     public static final class string {
         public static final int app_name=0x7f040001;
         public static final int author=0x7f040003;
+        /**  About window string 
+         */
+        public static final int aw_title=0x7f04000a;
         public static final int date=0x7f040004;
         public static final int hello=0x7f040000;
+        public static final int mw_about=0x7f040009;
+        public static final int mw_button1=0x7f040007;
+        public static final int mw_button2=0x7f040008;
+        /**  Main window descriptions 
+         */
+        public static final int mw_sequencer=0x7f040006;
         public static final int revision=0x7f040002;
         public static final int version=0x7f040005;
     }

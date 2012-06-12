@@ -7,5 +7,14 @@
     <string name="author">$Author$</string>
     <string name="date">$Date$</string>
     <string name="version">1.0</string>
+    
+    <!-- Main window descriptions -->
+    <string name="mw_sequencer">Sequencer</string>
+    <string name="mw_button1">Button1</string>
+    <string name="mw_button2">Button2</string>
+    <string name="mw_about">About</string>
+    
+    <!-- About window string -->
+    <string name="aw_title">Über Meister Lampe</string>
 
 </resources>
