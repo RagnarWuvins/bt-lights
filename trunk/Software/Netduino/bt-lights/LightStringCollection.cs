@@ -26,13 +26,16 @@ namespace BTLights
             channels = new LightString[numberOfChannels];
             channelTimerDelegates = new TimerCallback[numberOfChannels];
             channelTimers = new Timer[numberOfChannels];
-            for (int ch = 0; ch < channels.Length; ch++)
+            // block from other threads
+            lock (new object())
             {
-                channels[ch] = new LightString(_SPIBus, ch);
-                channelTimerDelegates[ch] = new TimerCallback(channels[ch].ModeSelector);
-                channelTimers[ch] = new Timer(channelTimerDelegates[ch], null, channels[ch].timerDelay, channels[ch].timerPeriod);
+                for (int ch = 0; ch < channels.Length; ch++)
+                {
+                    channels[ch] = new LightString(_SPIBus, ch);
+                    channelTimerDelegates[ch] = new TimerCallback(channels[ch].ModeSelector);
+                    channelTimers[ch] = new Timer(channelTimerDelegates[ch], null, channels[ch].timerDelay, channels[ch].timerPeriod);
+                }
             }
-
             _WriteBuffer = new byte[] { Constants.Read(Constants.CONFIGURATION), 0x00 };
             _SPIBus.WriteRead(_WriteBuffer, _ReadBuffer);
             // run this configuration & apply the external input clock
@@ -87,7 +90,11 @@ namespace BTLights
                 }
                 case (int)Constants.MODE.CMD_RESTART:
                 {
-                    RestartChannelTimer(channel);
+                    // block from other threads
+                    lock(new object())
+                    {
+                        RestartChannelTimer(channel);
+                    }
                     break;
                 }
                 default:

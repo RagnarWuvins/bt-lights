@@ -12,10 +12,11 @@ namespace BTLights
         #region Global const definition block
         public static int G_MAX_ADDRESS     = 16;           // number of maximum addresses
         public static int G_SET_ADDRESS     = 10;           // number of given addresses = number of channels
+        public static uint DEFAULT_PWM = 20;
         public static int G_MAX_CHANNELS = G_SET_ADDRESS;   // number of channels
         public static int G_CHANNEL_ADR_MASK    = 0xFFFF;   // mask for the address part
         public static int C_LENGTH = 0x07; // Command length incl \n\r
-        public static int BAUDRATE = 38400; // Global baudrate
+        public static int BAUDRATE = 38400; // Global baudrate (default: 38400)
         public static int ERROR_LOG_LENGTH = 256; // Length of error log
 #if TARGET
         public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2; // AT pin to switch to bluetooth service commands

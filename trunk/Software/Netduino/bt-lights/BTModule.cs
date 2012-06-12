@@ -39,7 +39,7 @@ namespace BTLights
         public void Reset()
         {
             _resetPin.Write(false);
-            Thread.Sleep(1);
+            Thread.Sleep(10);
             _resetPin.Write(true);
         }
 

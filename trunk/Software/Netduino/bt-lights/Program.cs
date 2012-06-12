@@ -15,7 +15,7 @@ namespace BTLights
         public static SPI.Configuration _MAX;
         public static SPI _SPIBus;
         public static PWM _Ext_PWM = new PWM(Constants.PWM); // Init the external PWM for SPI
-        public static uint _PWMRate = 2;
+        public static uint _PWMRate = Constants.DEFAULT_PWM;
         public static int commandCounter = 0;
         public static LightStringCollection channels;
         public static BTModule _BT;
@@ -59,7 +59,7 @@ namespace BTLights
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
             // Only for first initialization. Damn got no EEProm to save that state?!
-            _BT.dump(Constants.BT_INIT_SLOW);
+            _BT.dump(Constants.BT_INIT_FAST);
             _BT.Reset(); // make a reset so we can detect the board from all devices
 
             _BT.flushBuffer();  //flush the buffers after init to interact with user hassle free
