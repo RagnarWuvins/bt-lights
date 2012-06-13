@@ -5,18 +5,25 @@
 = Introduction =
 This project will be about a bluetooth control for a 16 channel EL wire dimmer. The hardware is realized with Netduino / Arduino and additional peripherie.
 
+PROGRESS:
+* Almost all channel commands are implemented (documentation will follow, so far only in code comments and in text file)
+* Some general commands are done, the most critical I guess
+* Still some work to do for the buffer control (too many overflows in the error log)
+* Android App has been started. Phew Bluetooth looks a bit different here. :/
+
 = Documentation =
 * [doumentationBTProtocol Serial Protocol]
 
 = Requirements: =
 
 == Open: ==
- * protocol for BT interface on Netduino
- * Dimming hardware for 8 and 16 channels
+ * Android implementation
  * Portation from Netduino to Arduino
- * Library for using dimming hardware
+
 
 == Closed: ==
-
+ * Library for using dimming hardware
+ * Dimming hardware for 8 and 16 channels
+ * protocol for BT interface on Netduino
  * Find BT firmware that can be used with Android Phones.
  * Test Firmware on Netduino to configure BT module and send commands
