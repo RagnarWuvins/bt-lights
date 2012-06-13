@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+	<!-- App strings -->
     <string name="hello">Hello World, BTLightsActivity!</string>
     <string name="app_name">Meister Lampe</string>
+    <string name="target">Meister Lampe</string>
     <string name="revision">$Revision$</string>
     <string name="author">$Author$</string>
     <string name="date">$Date$</string>
     <string name="version">1.0</string>
+    <string name="setup_error">Couldn\'t connect to module :(</string>
     
     <!-- Main window descriptions -->
     <string name="mw_sequencer">Sequencer</string>
-    <string name="mw_button1">Button1</string>
-    <string name="mw_button2">Button2</string>
+    <string name="mw_functiongrid">Functions</string>
+    <string name="mw_setup">Bluetooth Setup</string>
     <string name="mw_about">About</string>
     
     <!-- About window string -->
     <string name="aw_title">Über Meister Lampe</string>
+    
+    <!-- Function grid strings -->
+    <string name="fg_title">Functions</string>
+    
+    <!-- BTModule strings -->
+    <string name="bm_title">Bluetooth settings</string>
+    <string name="bm_scandevices">Scan for devices</string>
 
 </resources>
