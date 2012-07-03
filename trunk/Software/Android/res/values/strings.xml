@@ -12,6 +12,7 @@
     
     <!-- Main window descriptions -->
     <string name="mw_sequencer">Sequencer</string>
+    <string name="mw_func3">Test</string>
     <string name="mw_functiongrid">Functions</string>
     <string name="mw_setup">Bluetooth Setup</string>
     <string name="mw_about">About</string>

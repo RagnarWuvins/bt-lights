@@ -128,6 +128,7 @@ public class BTModule extends Activity
 				{
 					writeOut("Target found in paried list");
 					mmDevice = device;
+					retState = getDevice();
 					break;
 				}
 			}

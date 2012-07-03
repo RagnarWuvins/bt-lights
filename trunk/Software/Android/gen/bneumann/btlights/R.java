@@ -19,10 +19,11 @@ public final class R {
         public static final int bm_connect=0x7f050006;
         public static final int bm_devicelist=0x7f050003;
         public static final int bm_scanbutton=0x7f050005;
-        public static final int mw_about=0x7f05000a;
-        public static final int mw_button1=0x7f050008;
+        public static final int mw_about=0x7f05000b;
+        public static final int mw_button1=0x7f050009;
+        public static final int mw_func3=0x7f050008;
         public static final int mw_sequencer=0x7f050007;
-        public static final int mw_setup=0x7f050009;
+        public static final int mw_setup=0x7f05000a;
         public static final int out1=0x7f050002;
         public static final int out2=0x7f050004;
     }
@@ -39,29 +40,30 @@ public final class R {
         /**  About window string 
  About window string 
          */
-        public static final int aw_title=0x7f04000c;
-        public static final int bm_connecttarget=0x7f040010;
-        public static final int bm_scandevices=0x7f04000f;
+        public static final int aw_title=0x7f04000d;
+        public static final int bm_connecttarget=0x7f040011;
+        public static final int bm_scandevices=0x7f040010;
         /**  BTModule strings 
  BTModule strings 
          */
-        public static final int bm_title=0x7f04000e;
+        public static final int bm_title=0x7f04000f;
         public static final int date=0x7f040005;
         /**  Function grid strings 
  Function grid strings 
          */
-        public static final int fg_title=0x7f04000d;
+        public static final int fg_title=0x7f04000e;
         /**  App strings 
  App strings 
          */
         public static final int hello=0x7f040000;
-        public static final int mw_about=0x7f04000b;
-        public static final int mw_functiongrid=0x7f040009;
+        public static final int mw_about=0x7f04000c;
+        public static final int mw_func3=0x7f040009;
+        public static final int mw_functiongrid=0x7f04000a;
         /**  Main window descriptions 
  Main window descriptions 
          */
         public static final int mw_sequencer=0x7f040008;
-        public static final int mw_setup=0x7f04000a;
+        public static final int mw_setup=0x7f04000b;
         public static final int revision=0x7f040003;
         public static final int setup_error=0x7f040007;
         public static final int target=0x7f040002;
