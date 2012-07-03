@@ -5,6 +5,8 @@
 = Introduction =
 This project will be about a bluetooth control for a 16 channel EL wire dimmer. The hardware is realized with Netduino / Arduino and additional peripherie.
 
+<wiki:video url="http://www.youtube.com/watch?v=AkGEFzkgKrQ"/>
+
 PROGRESS:
  * Almost all channel commands are implemented (documentation will follow, so far only in code comments and in text file)
  * Some general commands are done, the most critical I guess
