@@ -26,5 +26,7 @@
     <string name="bm_title">Bluetooth Einstellungen</string>
     <string name="bm_scandevices">Nach Geräten suchen</string>
     <string name="bm_connecttarget">Verbinde Target</string>
+    <string name="menu_about">Über</string>
+    <string name="menu_settings">Einstellungen</string>
 
 </resources>

@@ -3,6 +3,7 @@ package bneumann.btlights;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
+import bneumann.btlights.R.menu;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -11,6 +12,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -36,6 +40,38 @@ public class BTLightsActivity extends Activity
 		{
 			connect();
 		}
+	}
+
+	/*
+	 * This is the menu call
+	 */
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		MenuInflater inflater = new MenuInflater(this);
+		inflater.inflate(R.menu.bt_menu, menu);
+		return true;
+	}
+
+	/*
+	 * This is the menu handler
+	 */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		// Handle item selection
+		switch (item.getItemId())
+		{
+		case R.id.menu_about:
+			break;
+		case R.id.menu_settings:
+			Intent intent = new Intent(BTLightsActivity.this, BTModule.class);
+			startActivityForResult(intent, 1);
+			break;
+		default:
+
+		}
+		return true;
 	}
 
 	public void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -184,12 +220,6 @@ public class BTLightsActivity extends Activity
 		}
 	}
 
-	public void setup_callback(View v)
-	{
-		Intent intent = new Intent(BTLightsActivity.this, BTModule.class);
-		startActivityForResult(intent, 1);
-	}
-
 	public void functiongrid_callback(View v)
 	{
 		Intent intent = new Intent(BTLightsActivity.this, FunctionGrid.class);
@@ -216,7 +246,7 @@ public class BTLightsActivity extends Activity
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString("btAddress", Properties.btAddress);
 		editor.putBoolean("btConnectAtStartup", Properties.btConnectAtStartup);
-		
+
 		// after adding all fields, save
 		editor.commit();
 	}
