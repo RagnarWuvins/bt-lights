@@ -1,4 +1,5 @@
 #summary BT - Lights Documentation page
+#labels Phase-Implementation,Featured
 <wiki:toc max_depth="2" />
 
 = Bluetooth SPP Protocol = 
