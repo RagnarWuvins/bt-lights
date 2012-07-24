@@ -33,11 +33,11 @@ These commands are actually a wrapper for the BT serial connection. They will be
 
 Channel commands control the behaviour of the channel. Here is the protocol of the 7 Bit commands:
 
-Command classes (4bit)[0:3]:
-channel		=	0x00	single channel command
-global		=	0x01	global setting command
-at cmd		=	0x02	AT command for the BT chip
-port		=	0x03	direct port command that controls netduino functions
+||Command classes (4bit)[0:3]:||
+||channel||0x00||single channel command||
+||global||0x01||global setting command||
+||at cmd||0x02||AT command for the BT chip||
+||port||0x03||direct port command that controls netduino functions||
 
 Channel mode (4bit)[4:7]:
 No Change 	=	0x00	no change of current mode
