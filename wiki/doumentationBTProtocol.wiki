@@ -82,6 +82,12 @@ As seen in the channel command section it is possible to send global commands:
 ||trace out the error log||0x03||
 ||reset all channels||0x04||
 
-
+Example:
+Read the error log (value and address are not important but will be checked by checksum anyways)
+{{{
+|CLA |MOD |       ADR         |   VAL   |   CRC   |
+|0001|0011|0000|0000|0000|0000|0000|0000|0001|0011|
+|  byte 0 |  byte 1 |  byte 2 |  byte 3 |  byte 4 |
+}}}
 
 == Direct port commands (dp) ==
