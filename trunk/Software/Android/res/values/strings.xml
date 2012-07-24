@@ -12,7 +12,6 @@
     
     <!-- Main window descriptions -->
     <string name="mw_sequencer">Sequencer</string>
-    <string name="mw_func3">Test</string>
     <string name="mw_functiongrid">Functions</string>
     <string name="mw_setup">Bluetooth Setup</string>
     <string name="mw_about">About</string>
@@ -21,10 +20,13 @@
     <string name="aw_title">Über Meister Lampe</string>
     
     <!-- Function grid strings -->
-    <string name="fg_title">Functions</string>
+    <string name="fg_title">Funktionen</string>
     
     <!-- BTModule strings -->
-    <string name="bm_title">Bluetooth settings</string>
-    <string name="bm_scandevices">Scan for devices</string>
+    <string name="bm_title">Bluetooth Einstellungen</string>
+    <string name="bm_scandevices">Nach Geräten suchen</string>
+    <string name="bm_connecttarget">Verbinde Target</string>
+    <string name="menu_about">Über</string>
+    <string name="menu_settings">Einstellungen</string>
 
 </resources>

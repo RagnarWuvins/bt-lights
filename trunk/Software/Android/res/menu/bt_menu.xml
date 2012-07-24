@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/menu_settings" android:menuCategory="system" android:icon="@drawable/ic_menu_preferences" android:title="@string/menu_settings"></item>
+    <item android:id="@+id/menu_log" android:title="@string/menu_log" android:icon="@drawable/ic_menu_edit"></item>
     <item android:id="@+id/menu_about" android:title="@string/menu_about" android:icon="@drawable/ic_menu_info_details" android:menuCategory="system"></item>
+    <item android:id="@+id/menu_settings" android:menuCategory="system" android:icon="@drawable/ic_menu_preferences" android:title="@string/menu_settings"></item>
+    
     
 
 </menu>

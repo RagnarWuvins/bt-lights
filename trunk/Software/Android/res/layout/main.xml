@@ -13,14 +13,14 @@
         android:layout_margin="10dp"
         android:text="@string/mw_sequencer" 
         android:onClick="sequencer_callback"/>
-
+
     <Button
         android:id="@+id/mw_func3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:onClick="test_callback"
-        android:text="@string/mw_func3" />
+        android:text="@string/mw_functiongrid" />
 
     <Button
         android:id="@+id/mw_button1"

@@ -1,44 +1,77 @@
 package bneumann.btlights;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 import bneumann.btlights.R.menu;
+import bneumann.btlights.Utils;
+import bneumann.btlights.Utils.BTError;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.Toast;
 
 public class BTLightsActivity extends Activity
 {
 	BluetoothAdapter btAdapter;
 	BluetoothSocket btSocket;
-	private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // no
-																									// :/
+
 	String TAG = "Meister Lampe";
-	private OutputStream outStream;
 	BluetoothDevice btDevice = null;
 	boolean socketConnected = false;
+	BTError btError;
 
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
+		Log.i(TAG, "Meister Lampe is going rabbit wild now...");
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setContentView(R.layout.main);
-		loadPreferences();
-		if (Properties.btConnectAtStartup)
+		Utils.loadPreferences(this);
+		if (Properties.settings_connect_startup)
 		{
-			connect();
+			if (!Utils.getAdapterStatus())
+			{
+				Utils.enableAdapter(this);
+				return;
+			}
+			btError = connect();
+			if (btError == BTError.BT_NOERROR)
+			{
+				Utils.showToast(this, "Device connected...");
+			} else
+			{
+				Utils.showToast(this, "Connect faile with: " + btError.name());
+			}
 		}
 	}
 
@@ -59,17 +92,22 @@ public class BTLightsActivity extends Activity
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
+		Intent intent;
 		// Handle item selection
 		switch (item.getItemId())
 		{
 		case R.id.menu_about:
 			break;
 		case R.id.menu_settings:
-			Intent intent = new Intent(BTLightsActivity.this, BTModule.class);
-			startActivityForResult(intent, 1);
+			intent = new Intent(BTLightsActivity.this, Settings.class);
+			startActivity(intent);
+			break;
+		case R.id.menu_log:
+			intent = new Intent(BTLightsActivity.this, LogViewer.class);
+			startActivity(intent);
 			break;
 		default:
-
+			break;
 		}
 		return true;
 	}
@@ -79,111 +117,39 @@ public class BTLightsActivity extends Activity
 		if (resultCode == Activity.RESULT_OK)
 		{
 			// Get the device MAC address
-			Properties.btAddress = data.getExtras().getString(BTModule.EXTRA_DEVICE_ADDRESS);
+			Properties.settings_device_id = data.getExtras().getString(BTModule.EXTRA_DEVICE_ADDRESS);
 			try
 			{
-				Utils.showToast(this, "Can connect to " + Properties.btAddress + " now", Toast.LENGTH_LONG);
-				btAdapter.cancelDiscovery();
+				Utils.showToast(this, "Can connect to " + Properties.settings_device_id + " now", Toast.LENGTH_LONG);
+				if (btAdapter != null)
+				{
+					btAdapter.cancelDiscovery();
+				}
+				connect();
 			}
 			catch (Exception exp)
 			{
-				Utils.showToast(this, "Shit address (" + Properties.btAddress + ") is invalid?!", Toast.LENGTH_LONG);
+				Utils.showToast(this, "Shit address (" + Properties.settings_device_id + ") is invalid?!", Toast.LENGTH_LONG);
 			}
-			savePreferences();
+			Utils.savePreferences(this);
 		}
 	}
 
-	public void connect()
+	public BTError connect()
 	{
-		// Attempt to connect to the device
-		if (Properties.btAddress == "")
-		{
-			Utils.showToast(this, "No address for device found. Use Bluetooth setup first");
-			Log.d(TAG, "No address for device found. Use Bluetooth setup first");
-			return;
-		}
-		try
-		{
-			// Get the BLuetoothDevice object
-			btAdapter = BluetoothAdapter.getDefaultAdapter();
-			btDevice = btAdapter.getRemoteDevice(Properties.btAddress);
-			btSocket = btDevice.createRfcommSocketToServiceRecord(MY_UUID);
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "ON RESUME: Socket creation failed.", e);
-		}
-
-		// Discovery may be going on, e.g., if you're running a 'scan for
-		// devices' search
-		// from your handset's Bluetooth settings, so we call
-		// cancelDiscovery(). It doesn't
-		// hurt to call it, but it might hurt not to... discovery is a
-		// heavyweight process;
-		// you don't want it in progress when a connection attempt is made.
-		btAdapter.cancelDiscovery();
-
-		// Blocking connect, for a simple client nothing else can happen
-		// until a successful
-		// connection is made, so we don't care if it blocks.
-
-		try
-		{
-			btSocket.connect();
-			Log.d(TAG, "ON RESUME: BT connection established, data transfer link open.");
-			socketConnected = true;
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "Failed to connect socket!", e);
-			try
-			{
-				btSocket.close();
-				btSocket.connect();
-				socketConnected = false;
-			}
-			catch (IOException e2)
-			{
-				Log.e(TAG, "ON RESUME: Unable to close socket during connection failure", e2);
-			}
-		}
-	}
-
-	public void sendData(int cla, int mode, int address, int value)
-	{
-		// Create a data stream so we can talk to server.
-		try
-		{
-			outStream = btSocket.getOutputStream();
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "ON RESUME: Output stream creation failed.", e);
-		}
-
-		int claNmod = (cla << 8) | mode;
-		byte[] msgBuffer = { (byte) claNmod, (byte) ((address >> 8) & 0xFF), (byte) (address & 0xFF), (byte) value, (byte) (value + claNmod), (byte) 0xD, (byte) 0xA };
-		try
-		{
-			outStream.write(msgBuffer);
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "ON RESUME: Exception during write.", e);
-		}
+		return Utils.connect(Properties.settings_device_id);
 	}
 
 	public void sequencer_callback(View v)
 	{
-		if (Properties.btAddress != "")
+		if (Properties.settings_device_id != "")
 		{
-			if (!socketConnected)
+			if (btError != BTError.BT_NOERROR)
 			{
-				connect();
+				btError = connect();
 			} else
 			{
-				sendData(1, 6, 0xFFFF, 3);
-				sendData(0, 4, 0xFFFF, 3);
+				Utils.sendData(0, 12, 0xFFFF, 0);
 			}
 
 		}
@@ -191,33 +157,40 @@ public class BTLightsActivity extends Activity
 
 	public void test_callback(View v)
 	{
-		if (Properties.btAddress != "")
+		if (Properties.settings_device_id != "")
 		{
-			if (!socketConnected)
+			if (btError != BTError.BT_NOERROR)
 			{
-				connect();
+				btError = connect();
 			} else
 			{
-				sendData(0, 9, 0x0001, 0);
-				sendData(0, 9, 0x0002, 50);
-				sendData(0, 9, 0x0004, 100);
-				sendData(0, 9, 0x0008, 150);
-				sendData(0, 9, 0x0010, 200);
-				sendData(0, 9, 0x0020, 250);
-				sendData(0, 9, 0x0040, 300);
-				sendData(0, 9, 0x0080, 350);
-				sendData(0, 9, 0x0100, 400);
-				sendData(0, 9, 0x0200, 450);
-				sendData(0, 9, 0x0400, 500);
-				sendData(0, 9, 0x0800, 550);
-				sendData(0, 9, 0x1000, 600);
-				sendData(0, 9, 0x2000, 650);
-				sendData(0, 9, 0x4000, 700);
-				sendData(0, 9, 0x8000, 750);
-				sendData(0, 4, 0xFFFF, 3);
+				Utils.sendData(0, 9, 0x0001, 0);
+				Utils.sendData(0, 9, 0x0002, 10);
+				Utils.sendData(0, 9, 0x0004, 20);
+				Utils.sendData(0, 9, 0x0008, 30);
+				Utils.sendData(0, 9, 0x0010, 40);
+				Utils.sendData(0, 9, 0x0020, 50);
+				Utils.sendData(0, 9, 0x0040, 60);
+				Utils.sendData(0, 9, 0x0080, 70);
+				Utils.sendData(0, 9, 0x0100, 80);
+				Utils.sendData(0, 9, 0x0200, 90);
+				Utils.sendData(0, 9, 0x0400, 100);
+				Utils.sendData(0, 9, 0x0800, 110);
+				Utils.sendData(0, 9, 0x1000, 120);
+				Utils.sendData(0, 9, 0x2000, 130);
+				Utils.sendData(0, 9, 0x4000, 140);
+				Utils.sendData(0, 9, 0x8000, 150);
+				Utils.sendData(0, 4, 0xFFFF, 3);
+				Utils.sendData(0, 12, 0xFFFF, 0);
 			}
 
 		}
+	}
+
+	public void setup_callback(View v)
+	{
+		Intent intent = new Intent(BTLightsActivity.this, BTModule.class);
+		startActivityForResult(intent, 1);
 	}
 
 	public void functiongrid_callback(View v)
@@ -230,24 +203,5 @@ public class BTLightsActivity extends Activity
 	{
 		Intent intent = new Intent(BTLightsActivity.this, AboutBTLightsActivity.class);
 		startActivity(intent);
-	}
-
-	public void loadPreferences()
-	{
-
-		SharedPreferences settings = getSharedPreferences(Properties.prefFilename, 0);
-		Properties.btAddress = settings.getString("btAddress", "");
-		Properties.btConnectAtStartup = settings.getBoolean("btConnectAtStartup", false);
-	}
-
-	public void savePreferences()
-	{
-		SharedPreferences settings = getSharedPreferences(Properties.prefFilename, 0);
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putString("btAddress", Properties.btAddress);
-		editor.putBoolean("btConnectAtStartup", Properties.btConnectAtStartup);
-
-		// after adding all fields, save
-		editor.commit();
 	}
 }

@@ -32,6 +32,8 @@
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/bm_title"
             android:theme="@android:style/Theme.Dialog" />
+        <activity android:name="Settings"></activity>
+        <activity android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" android:name="LogViewer"></activity>
     </application>
 
 </manifest>
