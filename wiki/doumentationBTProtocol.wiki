@@ -33,37 +33,34 @@ These commands are actually a wrapper for the BT serial connection. They will be
 
 Channel commands control the behaviour of the channel. Here is the protocol of the 7 Bit commands:
 
-||Command classes (4bit)[0:3]:||
+===Command classes (4bit)[0:3]:===
 ||channel||0x00||single channel command||
 ||global||0x01||global setting command||
 ||at cmd||0x02||AT command for the BT chip||
 ||port||0x03||direct port command that controls netduino functions||
 
-Channel mode (4bit)[4:7]:
-No Change 	=	0x00	no change of current mode
-Direct Mode	=	0x01	set value
-On		=	0x02	set to On
-Off		=	0x03	set to off
-Func		=	0x04	set a preprogrammed function
-Get value	=	0x05	Get value of channel(s)
-Set Max		=	0x06	set maximum value of channel(s)
-Set Min		= 	0x07	set minimum value of channel(s)
-Set Delay	= 	0x08	set delay value of channel(s)
-Set Period	= 	0x09	set period value of channel(s)
-Restart		= 	0x0A	restart timer of channel(s)
+===Channel mode (4bit)[4:7]:===
+||No Change||0x00||no change of current mode||
+||Direct Mode||0x01||set value||
+||On||0x02||set to On||
+||Off||0x03||set to off||
+||Func||0x04||set a preprogrammed function||
+||Get value||0x05||Get value of channel(s)||
+||Set Max||0x06||set maximum value of channel(s)||
+||Set Min||0x07||set minimum value of channel(s)||
+||Set Delay||0x08||set delay value of channel(s)||
+||Set Period||0x09||set period value of channel(s)||
+||Restart||0x0A||restart timer of channel(s)||
 
-Address (16bit)[8:23]:
+===Address (16bit)[8:23]:===
 Channels can be address by a seperate bit in the command. Thus making it possible to send
 commands simultaniously.
-In global mode the addresses are use as command type (?)
 
-
-Channel value (8bit)[24:31]:
+===Channel value (8bit)[24:31]:===
 All values from 0 to 255
 
-CRC (8bit)[32:39]
+===CRC (8bit)[32:39]===
 The CRC is the sum of CLA, MOD and VAL (has an overflow so this is not a real CRC)
-
 
 Example:
 Set channel 1 to fade (value doesn't matter)
