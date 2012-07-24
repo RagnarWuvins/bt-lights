@@ -10,8 +10,8 @@ namespace BTLights
         public LightString[] channels;
         public event NativeEventHandler SendChannelData;
 
-        private static Timer[] channelTimers;
-        private static TimerCallback[] channelTimerDelegates; 
+        private static Timer[] channelTimers = null;
+        private static TimerCallback[] channelTimerDelegates = null; 
         private SPI _SPIBus;
         private int _numberOfChannels = 0;
         private byte[] _WriteBuffer;
@@ -54,7 +54,11 @@ namespace BTLights
             {
                 case (int)Constants.MODE.FUNC:
                 {
-                    SetChannelFunction(channel, (int)value);
+                    // block from other threads
+                    lock (new object())
+                    {
+                        SetChannelFunction(channel, (int)value);
+                    }
                     break;
                 }
                 case (int)Constants.MODE.CMD_GET_VAL:

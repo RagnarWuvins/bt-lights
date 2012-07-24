@@ -184,18 +184,17 @@ namespace BTLights
         // set to any value
         public int Value
         {
-            get
-            {
-                //writeBuffer = new byte[] { Constants.Read((byte)channel), 0 };
-                //_SPIBus.WriteRead(writeBuffer, readBuffer);
-                //return readBuffer[1];
-                return _Value;
-            }
+            get { return _Value; }
             set
             {
                 _lastValue = _Value;
                 _Value = value > upperLimit ? upperLimit : value;
                 _Value = value < lowerLimit ? lowerLimit : value;
+                int channelDissapation = (_lastValue - Value) >= 0 ? (_lastValue - Value) : -(_lastValue - Value);
+                if (channelDissapation > Constants.MAX_CHANNEL_DISSAPATION)
+                {
+                    Program.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_VALUE_ASSERT);
+                }
                 writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value };
                 _SPIBus.Write(writeBuffer);
             }

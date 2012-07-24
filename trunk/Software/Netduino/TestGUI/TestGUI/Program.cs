@@ -17,9 +17,19 @@ namespace BluetoothLights
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            if (true)
+
+            Constants constClass = new Constants();
+            System.Xml.Serialization.XmlSerializer writer =
+                new System.Xml.Serialization.XmlSerializer(typeof(Constants));
+
+            System.IO.StreamWriter file = new System.IO.StreamWriter(
+                @"c:\temp\SerializationOverview.xml");
+            writer.Serialize(file, constClass);
+            file.Close();
+
+            if (false)
             {
-                SerialPort srl = new SerialPort("COM22", Constants.BAUDRATE);
+                SerialPort srl = new SerialPort("COM31", Constants.BAUDRATE);
                 srl.NewLine = "\r\n";
                 Application.Run(new controller(srl));
             }

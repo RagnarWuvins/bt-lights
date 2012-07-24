@@ -5,19 +5,29 @@ using Microsoft.SPOT;
 using SecretLabs.NETMF.Hardware.Netduino;
 #endif
 
+#if !TARGET
+using System.Xml.Serialization;
+using System.ComponentModel;
+using System;
+using System.Runtime.Serialization;
+#endif
+
 namespace BTLights
 {
-    class Constants
+    [Serializable]
+    public class Constants
     {
         #region Global const definition block
-        public static int G_MAX_ADDRESS     = 16;           // number of maximum addresses
+        public static int G_MAX_ADDRESS = 16;           // number of maximum addresses
         public static int G_SET_ADDRESS     = 10;           // number of given addresses = number of channels
-        public static uint DEFAULT_PWM = 20;
+        public static uint PWM_INIT = 10;
+        public static uint PWM_MAX = 20;
         public static int G_MAX_CHANNELS = G_SET_ADDRESS;   // number of channels
-        public static int G_CHANNEL_ADR_MASK    = 0xFFFF;   // mask for the address part
+        public static int G_CHANNEL_ADR_MASK = 0xFFFF;   // mask for the address part
         public static int C_LENGTH = 0x07; // Command length incl \n\r
         public static int BAUDRATE = 38400; // Global baudrate (default: 38400)
         public static int ERROR_LOG_LENGTH = 256; // Length of error log
+        public static int MAX_CHANNEL_DISSAPATION = 128; // value changes should not exceed this limit
 #if TARGET
         public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2; // AT pin to switch to bluetooth service commands
         public static Microsoft.SPOT.Hardware.Cpu.Pin PWM = Pins.GPIO_PIN_D9;   // PWM pin to control the PWM clock of the SPI module
@@ -26,10 +36,12 @@ namespace BTLights
 
         public enum FW_ERRORS
         {
-            CMD_UNKNOWN,
-            CMD_CORRUPT,
-            BUFFER_OFERFLOW,
-            WRONG_FUNCTION_POINTER,
+            CMD_UNKNOWN,        // just unknown command (maybe came through checksum by incident)
+            CMD_CORRUPT,        // not a channel (internal) command
+            CMD_ASSERT_FAIL,    // it was neither internal nor external (maybe length 0)
+            BUFFER_OFERFLOW,    // to many commands comming in
+            WRONG_FUNCTION_POINTER, // this functioin is not declared for channels
+            CHANNEL_VALUE_ASSERT,   // the channel changed its value very fast, this should not happen accidently
         };
 
         public enum CLASS
@@ -66,9 +78,9 @@ namespace BTLights
             CMD_GC_RESET_CC,       // Reset the command counter
             CMD_GC_CPU, // get the current cpu usage
             CMD_ERROR, // trace out the error log
-            CMD_INC_PWM,    // increase PWM by 10 until 200 then go back to 10
+            //CMD_INC_PWM,    // increase PWM by 10 until 200 then go back to 10
             CMD_RESET_ALL,  // reset all channels
-            CMD_ACK,
+            CMD_RESET_SYSTEM,
             CMD_NUM,    // Number of commands must be end of enum
         };
 
@@ -118,6 +130,9 @@ namespace BTLights
             };
         public static string[] BT_BAUD3 = {
             "at+uart=115200,0,0",
+            "at+uart?"
+            };
+        public static string[] BT_TEST = {
             "at+uart?"
             };
         #endregion

@@ -15,10 +15,10 @@ namespace BTLights
         public event NativeEventHandler CommandReceived = null;
         public static byte[] _readBuffer = new Byte[bufferMax];
 
-        const int bufferMax = 512;
+        const int bufferMax = 32;
         const int numOfBuffer = 2;
 
-        private static int _writeIndex = 0;
+        private static int _writeIndex = 0, _readIndex = 0;
         private static byte[] _writeBuffer;
 
         public BTModule(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
@@ -107,33 +107,101 @@ namespace BTLights
         private void receiveBT(object sender, SerialDataReceivedEventArgs e)
         {
             int curBufferLength = BytesToRead;
-            Debug.Print("buffer length: " + curBufferLength);
-            Read(_readBuffer, _writeIndex, curBufferLength);
-            _writeIndex += curBufferLength;
-            if (_writeIndex >= Constants.C_LENGTH)
+            //Debug.Print("RI:" + _readIndex + " | WI: " + _writeIndex);
+            byte[] tempBuffer = new Byte[curBufferLength];
+            if (_writeIndex + curBufferLength > _readBuffer.Length)
             {
-                CommandReceived((uint)_writeIndex, 0, DateTime.Now);                
-            }            
+                // do the wrap around
+                Read(tempBuffer, 0, curBufferLength);
+                int splitPoint = _readBuffer.Length - _writeIndex;
+                Array.Copy(tempBuffer, 0, _readBuffer, _writeIndex, splitPoint);
+                Array.Copy(tempBuffer, splitPoint, _readBuffer, 0, curBufferLength - splitPoint);
+                _writeIndex = curBufferLength - splitPoint;
+            }
+            else
+            {
+                Read(_readBuffer, _writeIndex, curBufferLength);
+                _writeIndex += curBufferLength;
+            }
+            
+            startCommandReceive();
+            return;           
         }
 
         // The main routine is interested in the command so we'll pass it over
-        public byte[] GetCommand(uint _none)
+        public byte[] GetCommand(uint _dataInBufferLength, int newReadIndex)
         {
-            byte[] command = new Byte[Constants.C_LENGTH];
-            Array.Copy(_readBuffer, command, Constants.C_LENGTH);
-            _writeIndex = 0;
-            flushBuffer();
+            byte[] command = new Byte[_dataInBufferLength];
+            if (_readIndex + (int)_dataInBufferLength > _readBuffer.Length)
+            {
+                int splitLength = _readBuffer.Length - _readIndex;
+                Array.Copy(_readBuffer, _readIndex, command, 0, splitLength);
+                Array.Copy(_readBuffer, 0, command, splitLength, newReadIndex);
+            }
+            else
+            {
+                Array.Copy(_readBuffer, _readIndex, command, 0, (int)_dataInBufferLength);
+            }
+            _readIndex = newReadIndex;
+            if (_readIndex != _writeIndex)
+            {
+                //Debug.Print("RI:" + _readIndex + " | WI: " + _writeIndex);
+                //startCommandReceive();
+            }
             return command;
         }
 
         public void flushBuffer(bool readBufOnly = false)
         {
             _readBuffer = new byte[bufferMax];
+            _readIndex = 0;
             if (!readBufOnly)
             {
                 _writeBuffer = new byte[Constants.C_LENGTH];
                 _writeIndex = 0;
             }
+        }
+
+        public void startCommandReceive()
+        {
+            Thread getCommand = new Thread(CommandReceivedTest);
+            getCommand.Start();
+        }
+
+        public void CommandReceivedTest()
+        {
+            // lock to prevent overwrite of the indices
+            int readIndex = 0, writeIndex = 0;
+            lock(new object())
+            {
+                readIndex = _readIndex;
+                writeIndex = _writeIndex;
+            }
+            int dataInBufferLength = 0;
+            if (writeIndex < readIndex)
+            {
+                dataInBufferLength = (_readBuffer.Length - readIndex) + writeIndex;
+                for (int index = 0; index < writeIndex; index++)
+                {
+                    if (_readBuffer[index] == 0x0A)
+                    {
+                        CommandReceived((uint)dataInBufferLength, (uint)index + 1, DateTime.Now);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                dataInBufferLength = writeIndex - readIndex;
+                for (int index = readIndex; index < writeIndex; index++)
+                {
+                    if (_readBuffer[index] == 0x0A)
+                    {
+                        CommandReceived((uint)dataInBufferLength, (uint)index + 1, DateTime.Now);
+                        break;
+                    }
+                }
+            }                  
         }
     }
 }

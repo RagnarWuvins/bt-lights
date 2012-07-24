@@ -10,12 +10,13 @@ using BTLights;
 using System.IO.Ports;
 using System.Threading;
 using GraphLib;
+using System.IO;
 
 namespace BluetoothLights
 {
     public partial class controller : Form
     {
-        private static string[] _toolButtonDesc = {"Plot channel values", "Trace data", "Clear output"};
+        private static string[] _toolButtonDesc = {"Plot channel values", "Generate XML for Android", "Clear output"};
 
         private CheckBox[] _checkBoxes = new CheckBox[Constants.G_MAX_CHANNELS];
         private Button[] _cmdButtons = new Button[(int)Constants.MODE.CMD_NUM];
@@ -43,6 +44,7 @@ namespace BluetoothLights
         private static int _address = 0;
         private static int _value = 0;
         private static SerialPort _srl;
+        static int entryCounter = 0;
 
         public controller(SerialPort srl)
         {
@@ -59,7 +61,7 @@ namespace BluetoothLights
                     MessageBox.Show("Error while opening COM interface.", "Critical Warning");
                 }
             }
-
+            _srl.NewLine = "\r\n";
             _srl.DataReceived += new SerialDataReceivedEventHandler(_dataReceived);
 
             for (int channelCounter = 0; channelCounter < _checkBoxes.Length; channelCounter++ )
@@ -169,7 +171,10 @@ namespace BluetoothLights
                     pl.Show();
                     break;
                 case "tb1":
-
+                    string oupath = functions.Const2XML();
+                    string path = Path.Combine(Environment.CurrentDirectory, oupath);
+                    path = Path.GetFullPath(path);
+                    debugOut(path);
                     break;
                 case "tb2":
                     _output.Clear();
@@ -194,6 +199,7 @@ namespace BluetoothLights
             Button bt = (Button)sender;
             _mode = _string2enum(bt.Text);
             _cla = 1;
+            entryCounter = 0;
             _sendData();
         }
 
@@ -232,7 +238,8 @@ namespace BluetoothLights
             string debugString = "";
             switch (_cla)
             {
-                case 0:
+                    // these are the channel commands
+                case (int)Constants.CLASS.CC_CMD:
                     byte[] currentBuffer = new Byte[7];
                     srl.Read(currentBuffer, 0, 7);
                     int cla = currentBuffer[0] >> 4;
@@ -250,28 +257,23 @@ namespace BluetoothLights
                     }
                     debugOut(debugString);
                     break;
-                case 1:
+                // these are the global commands
+                case (int)Constants.CLASS.GC_CMD:                    
                     while (srl.BytesToRead > 0)
                     {
                         byte[] test = ASCIIEncoding.UTF8.GetBytes(srl.ReadLine());
-                        if (_mode == 3)
+                        // if the command was firmware error tracing:
+                        if (_mode == (int)Constants.COMMANDS.CMD_ERROR)
                         {
-                            int pos = 32;
-                            int sysTime = 0;
-                            int fwError = 0;
-                            foreach (byte by in test)
-                            {
-                                if (pos > 8)
-                                {
-                                    fwError |= (by << pos);
-                                }
-                                else
-                                {
-                                    sysTime |= (by << pos);
-                                }
-                                pos -= 8;
-                            }
-                            debugOut(String.Format("ERROR Num: {0} Time: {1}\n",fwError >> 16, sysTime), true); 
+                            uint sysTime = 0;
+                            uint fwError = 0;
+                            // stupig BitConverter uses revers endianism :/
+                            uint errorEntry = BitConverter.ToUInt32(new byte[] {test[4], test[3], test[2], test[1]}, 0);
+                            sysTime = (errorEntry & 0x00FFFFFF);
+                            fwError = (errorEntry & 0xFF000000) >> 24;
+
+                            debugOut(String.Format("ERROR Num: {0} Time: {1} Entry number: {2}\n", fwError, sysTime, entryCounter), true);
+                            entryCounter++;
                         }
                         else
                         {
@@ -287,6 +289,7 @@ namespace BluetoothLights
                     }
                     break;
                 default:
+                    debugOut(srl.ReadLine(), true);
                     break;
             }
             

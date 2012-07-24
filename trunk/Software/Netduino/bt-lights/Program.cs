@@ -7,15 +7,16 @@ using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
 using SecretLabs.NETMF.Hardware.Netduino;
 using System.Text;
+using System.Diagnostics;
 
 namespace BTLights
 {
-    public class Program
+    class Program
     {
         public static SPI.Configuration _MAX;
         public static SPI _SPIBus;
         public static PWM _Ext_PWM = new PWM(Constants.PWM); // Init the external PWM for SPI
-        public static uint _PWMRate = Constants.DEFAULT_PWM;
+        public static uint _PWMRate = Constants.PWM_INIT;
         public static int commandCounter = 0;
         public static LightStringCollection channels;
         public static BTModule _BT;
@@ -25,8 +26,12 @@ namespace BTLights
             public int[] log;
             public int logIndex;
         }
-        public static Errorlog errorlog;
+        public static Errorlog errorlog;    // error log for storing firmware errors
+        public static Stopwatch sysClock = Stopwatch.StartNew();   // start a new system clock
         private static OutputPort _LED = new OutputPort(Pins.ONBOARD_LED, false);
+        private static bool ditherEnable = false;
+        private static TimerCallback ditherCallback;
+        private static Timer ditherTimer;
 
         public static void Main()
         {
@@ -47,7 +52,15 @@ namespace BTLights
             SPI_Devices.SPI1    // The used SPI bus (refers to a MOSI MISO and SCLK pinset)
             );
 
-            _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+            if (ditherEnable)
+            {
+                ditherCallback = new TimerCallback(ditherPWM);
+                ditherTimer = new Timer(ditherCallback, null, 0, 1);
+            }
+            else
+            {
+                _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+            }
 
             _SPIBus = new SPI(_MAX);
 
@@ -59,13 +72,27 @@ namespace BTLights
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
             // Only for first initialization. Damn got no EEProm to save that state?!
-            _BT.dump(Constants.BT_INIT_FAST);
+            //_BT.dump(Constants.BT_INIT_FAST);
+            _BT.dump(Constants.BT_TEST);
             _BT.Reset(); // make a reset so we can detect the board from all devices
 
             _BT.flushBuffer();  //flush the buffers after init to interact with user hassle free
 
 
             Thread.Sleep(-1);
+        }
+
+        private static void ditherPWM(object intObj)
+        {            
+            if (_PWMRate < Constants.PWM_MAX)
+            {
+                _PWMRate++;
+            }
+            else
+            {
+                _PWMRate = Constants.PWM_INIT;
+            }
+            _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
         }
 
         public static void SendChannelData(uint value, uint crc, DateTime time)
@@ -93,21 +120,27 @@ namespace BTLights
                     SplitCommand._commandCounter = 0;
                     break;
                 case (int)Constants.COMMANDS.CMD_GC_CPU:
-                    _BT.send2BT(Cpu.SystemClock);
+                    _BT.send2BT((int)sysClock.TotalTime);
                     break;
-                case (int)Constants.COMMANDS.CMD_INC_PWM:
-                    if (_PWMRate < 200)
-                    {
-                        _PWMRate += 10;
-                    }
-                    else
-                    {
-                        _PWMRate = 10;
-                    }
-                    _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
-                    break;
+                //case (int)Constants.COMMANDS.CMD_INC_PWM:
+                //    if (_PWMRate < 200)
+                //    {
+                //        _PWMRate += 10;
+                //    }
+                //    else
+                //    {
+                //        _PWMRate = 10;
+                //    }
+                //    _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+                //    break;
                 case (int)Constants.COMMANDS.CMD_RESET_ALL:
                     channels.Invoke();
+                    break;
+                case (int)Constants.COMMANDS.CMD_RESET_SYSTEM:
+                    lock(new object())
+                    {
+                        PowerState.RebootDevice(false);
+                    }
                     break;
                 case (int) Constants.COMMANDS.CMD_ERROR:
                     for(int i = 0; i < errorlog.logIndex; i++)
@@ -122,7 +155,8 @@ namespace BTLights
 
         public static void THROW_ERROR(object error)
         {
-            errorlog.log[errorlog.logIndex] = (int)error << 16 | System.DateTime.Now.Second;
+            int temp = ((int)error << 24) | (((int)sysClock.TotalTime) & 0x00FFFFFF);
+            errorlog.log[errorlog.logIndex] = temp;
             if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH - 1)
             {
                 errorlog.logIndex++;
@@ -138,10 +172,10 @@ namespace BTLights
             //_BT.send2BT(errorString);
         }
 
-        public static void CommandHandler(uint writeIndex, uint j, DateTime time)
+        public static void CommandHandler(uint writeIndex, uint newIndex, DateTime time)
         {
             
-            byte[] _command = _BT.GetCommand(writeIndex);
+            byte[] _command = _BT.GetCommand(writeIndex, (int)newIndex);
             if (_command == null)
             {
                 return;
