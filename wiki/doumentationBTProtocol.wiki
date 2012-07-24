@@ -72,4 +72,16 @@ Set channel 1 to fade (value doesn't matter)
 
 == General commands (gc) ==
 
+As seen in the channel command section it is possible to send global commands:
+
+
+===Global mode(4bit)[4:7]:===
+||Get the command counter||0x00||
+||Reset the command counter||0x01||
+||get the current cpu usage||0x02||
+||trace out the error log||0x03||
+||reset all channels||0x04||
+
+
+
 == Direct port commands (dp) ==
