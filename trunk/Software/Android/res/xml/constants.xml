@@ -1,0 +1,85 @@
+<root>
+  <parameter name="G_MAX_ADDRESS" value="16" />
+  <parameter name="G_SET_ADDRESS" value="10" />
+  <parameter name="PWM_INIT" value="10" />
+  <parameter name="PWM_MAX" value="20" />
+  <parameter name="G_MAX_CHANNELS" value="G_SET_ADDRESS" />
+  <parameter name="G_CHANNEL_ADR_MASK" value="0xFFFF" />
+  <parameter name="C_LENGTH" value="0x07" />
+  <parameter name="BAUDRATE" value="38400" />
+  <parameter name="ERROR_LOG_LENGTH" value="256" />
+  <parameter name="MAX_CHANNEL_DISSAPATION" value="128" />
+  <parameter name="ATPIN" value="Pins.GPIO_PIN_D2" />
+  <parameter name="PWM" value="Pins.GPIO_PIN_D9" />
+  <parameter name="RESET" value="Pins.GPIO_PIN_D8" />
+  <enum type="FW_ERRORS">
+    <parameter name="CMD_UNKNOWN" value="0x0" />
+    <parameter name="CMD_CORRUPT" value="0x1" />
+    <parameter name="CMD_ASSERT_FAIL" value="0x2" />
+    <parameter name="BUFFER_OFERFLOW" value="0x3" />
+    <parameter name="WRONG_FUNCTION_POINTER" value="0x4" />
+    <parameter name="CHANNEL_VALUE_ASSERT" value="0x5" />
+  </enum>
+  <enum type="CLASS">
+    <parameter name="CC_CMD" value="0x0" />
+    <parameter name="GC_CMD" value="0x1" />
+    <parameter name="AT_CMD" value="0x2" />
+    <parameter name="DP_CMD" value="0x3" />
+    <parameter name="CMD_NUM" value="0x4" />
+  </enum>
+  <enum type="MODE">
+    <parameter name="NOOP" value="0x0" />
+    <parameter name="DIRECT" value="0x1" />
+    <parameter name="ON" value="0x2" />
+    <parameter name="OFF" value="0x3" />
+    <parameter name="FUNC" value="0x4" />
+    <parameter name="CMD_GET_VAL" value="0x5" />
+    <parameter name="CMD_SET_MAX" value="0x6" />
+    <parameter name="CMD_SET_MIN" value="0x7" />
+    <parameter name="CMD_SET_DELAY" value="0x8" />
+    <parameter name="CMD_SET_PERIOD" value="0x9" />
+    <parameter name="CMD_SET_RISE" value="0xA" />
+    <parameter name="CMD_SET_OFFSET" value="0xB" />
+    <parameter name="CMD_RESTART" value="0xC" />
+    <parameter name="CMD_NUM" value="0xD" />
+  </enum>
+  <enum type="COMMANDS">
+    <parameter name="CMD_GC_GET_CC" value="0x0" />
+    <parameter name="CMD_GC_RESET_CC" value="0x1" />
+    <parameter name="CMD_GC_CPU" value="0x2" />
+    <parameter name="CMD_ERROR" value="0x3" />
+    <parameter name="CMD_RESET_ALL" value="0x4" />
+    <parameter name="CMD_RESET_SYSTEM" value="0x5" />
+    <parameter name="CMD_NUM" value="0x6" />
+  </enum>
+  <enum type="FUNCTIONS">
+    <parameter name="FUNC_FADE = LIM_LOW" value="0x0" />
+    <parameter name="FUNC_SAW" value="0x1" />
+    <parameter name="FUNC_SAW_REV" value="0x2" />
+  </enum>
+  <parameter name="READ" value="0x80" />
+  <parameter name="WRITE" value="0x00" />
+  <parameter name="OUTPUT_P0" value="0x00" />
+  <parameter name="OUTPUT_P1" value="0x01" />
+  <parameter name="OUTPUT_P2" value="0x02" />
+  <parameter name="OUTPUT_P3" value="0x03" />
+  <parameter name="OUTPUT_P4" value="0x04" />
+  <parameter name="OUTPUT_P5" value="0x05" />
+  <parameter name="OUTPUT_P6" value="0x06" />
+  <parameter name="OUTPUT_P7" value="0x07" />
+  <parameter name="OUTPUT_P8" value="0x08" />
+  <parameter name="OUTPUT_P9" value="0x09" />
+  <parameter name="OUTPUT_ALL" value="0x0A" />
+  <parameter name="RAMP_DOWN" value="0x11" />
+  <parameter name="RAMP_UP" value="0x12" />
+  <parameter name="LIM_HIGH" value="0xFE" />
+  <parameter name="LIM_LOW" value="0x03" />
+  <parameter name="LIGHT_ON" value="0x02" />
+  <parameter name="LIGHT_OFF" value="0x01" />
+  <parameter name="CONF_RUN" value="0x01" />
+  <parameter name="CONF_CSRUN" value="0x02" />
+  <parameter name="CONF_STAGGER" value="0x20" />
+  <parameter name="CONF_PHASE" value="0x00" />
+  <parameter name="CONF_OSC" value="0x80" />
+  <parameter name="CONFIGURATION" value="0x10" />
+</root>
