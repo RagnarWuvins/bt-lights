@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="hello">Hello World, MLStartupActivity!</string>
-    <string name="app_name">MeisterLampe</string>
+    <string name="app_name">Meister Lampe</string>
+    <string name="main_start">Start</string>
+    <string name="main_help">Help</string>
+    <string name="main_quit">Quit</string>
 
 </resources>
