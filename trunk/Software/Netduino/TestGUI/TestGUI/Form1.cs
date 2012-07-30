@@ -28,11 +28,11 @@ namespace BluetoothLights
             }
             try
             {
-                ports.SelectedItem = "COM22";
+                ports.SelectedItem = Properties.Settings.Default.lastPort;
             }
             catch
             {
-                Console.WriteLine("COM22 couldn't be found");
+                Console.WriteLine(Properties.Settings.Default.lastPort +"  couldn't be found");
             }
         }
 
@@ -45,6 +45,8 @@ namespace BluetoothLights
                     _srl.BaudRate = Constants.BAUDRATE;
                     _srl.PortName = ports.SelectedItem.ToString();
                     _srl.Open();
+                    Properties.Settings.Default.lastPort = _srl.PortName;
+                    Properties.Settings.Default.Save();
                     _ctrl = new controller(_srl);
                     _ctrl.Show();
                     statusBar.Text = "connected";

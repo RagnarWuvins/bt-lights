@@ -165,6 +165,7 @@ namespace BTLights
         {
             writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value};
             _SPIBus.Write(writeBuffer);
+            _mode = _lastMode;
         }
 
         // set to on (cannot be set by Value variable, because out of range!)

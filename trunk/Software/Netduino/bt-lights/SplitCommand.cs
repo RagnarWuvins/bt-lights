@@ -47,7 +47,7 @@ namespace BTLights
 #if RELEASE
                 Program.THROW_ERROR(Constants.FW_ERRORS.CMD_CORRUPT);
 #else
-                //Debug.Print("IN: Stringcommand: " + new string(Encoding.UTF8.GetChars(command)));
+                Debug.Print("IN: Stringcommand: " + new string(Encoding.UTF8.GetChars(command)));
 #endif
             }
             else

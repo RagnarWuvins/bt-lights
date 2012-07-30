@@ -63,7 +63,20 @@ namespace BTLights
                 }
                 case (int)Constants.MODE.CMD_GET_VAL:
                 {
-                    GetChannelValue(channel);
+                    if (value == 0)
+                    {
+                        GetChannelValue(channel);
+                    }
+                    else
+                    {
+                        GetChannelMode(channel);
+                    }
+                    break;
+                }
+
+                case (int)Constants.MODE.CMD_SET_VAL:
+                {
+                    SetChannelValue(channel, (int)value, true);
                     break;
                 }
                 case (int)Constants.MODE.CMD_SET_MIN:
@@ -149,6 +162,25 @@ namespace BTLights
             }
         }
 
+        public void GetChannelMode(int channel)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    uint s_command = 0;
+                    uint s_address = (uint)(0x1 << i);
+                    uint curValue = (uint)channels[i].mode;
+                    s_command |= ((uint)Constants.CLASS.CC_CMD << 28);
+                    s_command |= ((uint)Constants.MODE.CMD_GET_VAL << 24);
+                    s_command |= ((uint)s_address << 8);
+                    s_command |= curValue;
+                    uint s_crc = (uint)(((uint)Constants.CLASS.CC_CMD << 4) | (uint)Constants.MODE.CMD_GET_VAL) + curValue;
+                    SendChannelData(s_command, s_crc, DateTime.Now);
+                }
+            }
+        }
+
         public void SetChannelCurve(int channel, int value, int mode)
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -167,13 +199,17 @@ namespace BTLights
             }
         }
 
-        public void SetChannelValue(int channel, int value)
+        public void SetChannelValue(int channel, int value, bool setDimState = false)
         {
             for (int i = 0; i < _numberOfChannels; i++)
             {
                 if (((channel >> i) & 0x1) == 1)
                 {
                     channels[i].Value = value;
+                    if (setDimState)
+                    {
+                        channels[i].dimState = value;
+                    }
                 }
             }
         }

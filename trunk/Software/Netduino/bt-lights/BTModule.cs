@@ -122,10 +122,8 @@ namespace BTLights
             {
                 Read(_readBuffer, _writeIndex, curBufferLength);
                 _writeIndex += curBufferLength;
-            }
-            
-            startCommandReceive();
-            return;           
+            }            
+            startCommandReceive();         
         }
 
         // The main routine is interested in the command so we'll pass it over
@@ -143,11 +141,6 @@ namespace BTLights
                 Array.Copy(_readBuffer, _readIndex, command, 0, (int)_dataInBufferLength);
             }
             _readIndex = newReadIndex;
-            if (_readIndex != _writeIndex)
-            {
-                //Debug.Print("RI:" + _readIndex + " | WI: " + _writeIndex);
-                //startCommandReceive();
-            }
             return command;
         }
 

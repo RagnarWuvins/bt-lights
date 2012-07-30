@@ -39,7 +39,7 @@ namespace BTLights
             CMD_UNKNOWN,        // just unknown command (maybe came through checksum by incident)
             CMD_CORRUPT,        // not a channel (internal) command
             CMD_ASSERT_FAIL,    // it was neither internal nor external (maybe length 0)
-            BUFFER_OFERFLOW,    // to many commands comming in
+            INTERPRETATION_ERROR,    // to many commands comming in
             WRONG_FUNCTION_POINTER, // this functioin is not declared for channels
             CHANNEL_VALUE_ASSERT,   // the channel changed its value very fast, this should not happen accidently
         };
@@ -62,6 +62,7 @@ namespace BTLights
             FUNC,	// set Function
             // now the commands start
             CMD_GET_VAL,    // get current value
+            CMD_SET_VAL,    // set current value
             CMD_SET_MAX,    // set the maximum value
             CMD_SET_MIN,    // set the minimum value
             CMD_SET_DELAY,    // set the timer delay
@@ -96,19 +97,17 @@ namespace BTLights
         /// Bluetooth module definition block. Contains all needed constants and support functions
         /// </summary>
         #region Bluetooth module definition block
-        public static string[] BT_INIT_SLOW = {
-            "at+version?",  // get version         
-            "at+class=240404",
+        public static string[] BT_INIT_SLOW = {    
+            "at+class=820118", //"at+class=240404",
             "at+role=0",
             "at+name=Meister Lampe",
             "at+uart=38400,0,0",
             "at+inqm=1,9,48",
-            "at+uart?",
             "at+state?"    // current state of BT module
                                         };
         public static string[] BT_INIT_FAST = {
             "at+version?",  // get version         
-            "at+class=240404",
+            "at+class=820118", //"at+class=240404",
             "at+role=0",
             "at+name=Meister Lampe",
             "at+uart=" + Constants.BAUDRATE + ",0,0",

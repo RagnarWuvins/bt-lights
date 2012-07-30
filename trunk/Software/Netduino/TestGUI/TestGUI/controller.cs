@@ -22,6 +22,7 @@ namespace BluetoothLights
         private Button[] _cmdButtons = new Button[(int)Constants.MODE.CMD_NUM];
         private Button[] _gCmdButtons = new Button[(int)Constants.COMMANDS.CMD_NUM];
         private TrackBar _valueBar = new TrackBar();
+        private NumericUpDown _textBox = new NumericUpDown();
         private static TextBox _output = new TextBox();        
         private Button[] _toolButtons = new Button[_toolButtonDesc.Length];
         private static bool _childrenRunning = false;
@@ -118,15 +119,24 @@ namespace BluetoothLights
             _valueBar.Location = new Point(_margin, _sliderYPos * _bHeight+ _margin * 2);
             _valueBar.Name = "_valueBar";
             _valueBar.Size = new Size(_sliderWidth, _bHeight);
-            _valueBar.Maximum = Constants.LIM_HIGH;
-            _valueBar.Minimum = Constants.LIM_LOW;            
+            _valueBar.Maximum = 255;
+            _valueBar.Minimum = 0;            
             _valueBar.ValueChanged += new EventHandler(_valueBar_Change);
             this.Controls.Add(_valueBar);
             _elementNum++;
 
-            _output.Location = new Point(_margin, _valueBar.Location.Y + _valueBar.Size.Height + _margin);
+            _textBox.Location = new Point(_margin, _valueBar.Location.Y + _valueBar.Size.Height + _margin);
+            _textBox.Name = "_textBox";
+            _textBox.ValueChanged += new EventHandler(_textBox_Change);
+            _textBox.Maximum = 255;
+            _textBox.Minimum = 0;
+            this.Controls.Add(_textBox);
+
+            _output.Location = new Point(_margin, _textBox.Location.Y + _textBox.Size.Height + _margin);
             _output.Name = "_output";
             _output.Multiline = true;
+            System.Drawing.Font tbFont = new Font("Courier New", 8, FontStyle.Bold);
+            _output.Font = tbFont;
             _output.ScrollBars = ScrollBars.Vertical;
             _output.Size = new Size(_sliderWidth, _outputHeight);
             this.Controls.Add(_output);
@@ -216,11 +226,19 @@ namespace BluetoothLights
             }
         }
 
-        private static void _valueBar_Change(object sender, EventArgs e)
+        private void _valueBar_Change(object sender, EventArgs e)
         {
             TrackBar tb = (TrackBar)sender;
             _value = tb.Value;
-            Console.WriteLine(_value);
+            _textBox.Value = _value;
+            _sendData();
+        }
+
+        private void _textBox_Change(object sender, EventArgs e)
+        {
+            NumericUpDown tb = (NumericUpDown)sender;
+            _value = (int)tb.Value;
+            _valueBar.Value = _value;
             _sendData();
         }
 
@@ -249,7 +267,7 @@ namespace BluetoothLights
                     int crc = currentBuffer[0] + currentBuffer[3];
                     if (crc == currentBuffer[4] | (crc - 0x100) == currentBuffer[4])
                     {
-                        debugString = String.Format("Class:\t{0}\nMode:\t{1}\nAddress:\t0x{2:X4}\nValue:\t{3}\n\n", cla, mode, address, value);
+                        debugString = String.Format("Class:\t\t{0}\nMode:\t\t{1}\nAddress:\t0x{2:X4}\nValue:\t\t{3}\n\n", cla, mode, address, value);
                     }
                     else
                     {
@@ -271,8 +289,16 @@ namespace BluetoothLights
                             uint errorEntry = BitConverter.ToUInt32(new byte[] {test[4], test[3], test[2], test[1]}, 0);
                             sysTime = (errorEntry & 0x00FFFFFF);
                             fwError = (errorEntry & 0xFF000000) >> 24;
-
-                            debugOut(String.Format("ERROR Num: {0} Time: {1} Entry number: {2}\n", fwError, sysTime, entryCounter), true);
+                            int min = (int)sysTime / 60;
+                            int hours = (int)min / 60;
+                            int sec = (int)sysTime - (hours * 3600 + min * 60);
+                            String erDesc = _int2enum((int)fwError, typeof(Constants.FW_ERRORS));
+                            String formatString = "{0}\t\t{1}:{2}:{3}\t{4}\n";
+                            if (erDesc.Length > 12)
+                            {
+                                formatString = "{0}\t{1}:{2}:{3}\t{4}\n";
+                            }
+                            debugOut(String.Format(formatString, erDesc, hours, min, sec, entryCounter), true);
                             entryCounter++;
                         }
                         else
@@ -297,10 +323,6 @@ namespace BluetoothLights
 
         private static void _sendData()
         {
-            //if (_mode == (int)Constants.MODE.FUNC & _value > 0)
-            //{
-            //    _value = _value - Constants.LIM_LOW;
-            //}
             byte _modcla = (byte)(_cla << 4 | _mode);
             byte _address_higher = (byte)((_address & 0xFF00) >> 8);
             byte _adress_lower = (byte)(_address & 0x00FF);
@@ -328,22 +350,17 @@ namespace BluetoothLights
             return output;
         }
 
-        private static string _int2enum(int modeNum)
+        private static string _int2enum(int modeNum, Type enumType)
         {
             string output = "";
-            if (Enum.IsDefined(typeof(Constants.MODE), modeNum))
+            if (Enum.IsDefined(enumType, modeNum))
             {
-                string[] modeEnums = Enum.GetNames(typeof(Constants.MODE));
-                output = modeEnums[modeNum];
-            }
-            else if (Enum.IsDefined(typeof(Constants.COMMANDS), modeNum))
-            {
-                string[] modeEnums = Enum.GetNames(typeof(Constants.COMMANDS));
+                string[] modeEnums = Enum.GetNames(enumType);
                 output = modeEnums[modeNum];
             }
             else
             {
-                MessageBox.Show("Not an enum!!!");
+                MessageBox.Show("Not part of this enum!!!");
             }
             return output;
         }

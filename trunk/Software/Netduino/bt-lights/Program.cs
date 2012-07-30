@@ -72,12 +72,8 @@ namespace BTLights
             _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One);
             _BT.CommandReceived += new NativeEventHandler(CommandHandler);
             // Only for first initialization. Damn got no EEProm to save that state?!
-            //_BT.dump(Constants.BT_INIT_FAST);
-            _BT.dump(Constants.BT_TEST);
+            _BT.dump(Constants.BT_INIT_SLOW);            
             _BT.Reset(); // make a reset so we can detect the board from all devices
-
-            _BT.flushBuffer();  //flush the buffers after init to interact with user hassle free
-
 
             Thread.Sleep(-1);
         }
@@ -182,7 +178,7 @@ namespace BTLights
             }
             if (writeIndex > Constants.C_LENGTH)
             {
-                THROW_ERROR(Constants.FW_ERRORS.BUFFER_OFERFLOW);
+                THROW_ERROR(Constants.FW_ERRORS.INTERPRETATION_ERROR);
             }
             SplitCommand sc = new SplitCommand(_command);
             sc.ChannelRequest += new NativeEventHandler(channels.ChannelCommandHandler);
