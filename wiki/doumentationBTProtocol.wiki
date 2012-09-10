@@ -47,11 +47,12 @@ Channel commands control the behaviour of the channel. Here is the protocol of t
 ||Off||0x03||set to off||
 ||Func||0x04||set a preprogrammed function||
 ||Get value||0x05||Get value of channel(s)||
-||Set Max||0x06||set maximum value of channel(s)||
-||Set Min||0x07||set minimum value of channel(s)||
-||Set Delay||0x08||set delay value of channel(s)||
-||Set Period||0x09||set period value of channel(s)||
-||Restart||0x0A||restart timer of channel(s)||
+||Set value||0x06||Set value of channel(s)||
+||Set Max||0x07||set maximum value of channel(s)||
+||Set Min||0x08||set minimum value of channel(s)||
+||Set Delay||0x09||set delay value of channel(s)||
+||Set Period||0x0A||set period value of channel(s)||
+||Restart||0x0B||restart timer of channel(s)||
 
 ===Address (16bit)[8:23]:===
 Channels can be address by a seperate bit in the command. Thus making it possible to send
