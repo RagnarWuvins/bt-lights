@@ -1,54 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/LinearLayout1"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical" >
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:id="@+id/LinearLayout1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
 
-    <Button
-        android:id="@+id/main_start"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:onClick="start_callback"
-        android:text="@string/main_start" />
+        <Button
+            android:id="@+id/main_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="start_callback"
+            android:text="@string/main_start" />
 
-    <Button
-        android:id="@+id/main_help"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:onClick="help_callback"
-        android:text="@string/main_help" />
+        <Button
+            android:id="@+id/main_help"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="help_callback"
+            android:text="@string/main_help" />
 
-    <Button
-        android:id="@+id/main_quit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:onClick="quit_callback"
-        android:text="@string/main_quit" />
+        <Button
+            android:id="@+id/main_xyTab"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="xyTab_callback"
+            android:text="@string/main_xyTab" />
 
-    <SeekBar
-        android:id="@+id/valuebar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
-        android:max="250" />
+        <Button
+            android:id="@+id/main_quit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="quit_callback"
+            android:text="@string/main_quit" />
 
-    <TextView
-        android:id="@+id/outputText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:text="@string/app_name"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+        <SeekBar
+            android:id="@+id/valuebar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:max="250" />
 
-    <ListView
-        android:id="@+id/outputList"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-    </ListView>
+        <TextView
+            android:id="@+id/outputText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="@string/app_name"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
 
-</LinearLayout>
+        <ListView
+            android:id="@+id/outputList"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent" >
+        </ListView>
+    </LinearLayout>
+
+</ScrollView>

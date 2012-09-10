@@ -4,6 +4,7 @@
     <string name="app_name">Meister Lampe</string>
     <string name="main_start">Start</string>
     <string name="main_help">Help</string>
+    <string name="main_xyTab">Time Controller</string>
     <string name="main_quit">Quit</string>
     <string name="not_connected">Status: not connected</string>
     <string name="connected">Status: connected</string>
@@ -14,7 +15,9 @@
     <string name="menu_about">About</string>
     <string name="menu_error_log">Error Log</string>
     <string name="menu_bugreport">Bug report</string>
-    <string name="menu_reset">Reset Hardware</string>
+    <string name="menu_reset">Reset Hardware</string>    
     <string name="title_activity_error_log">Error log viewer</string>
+    <string name="title_activity_mlcoord_view">Time Controller</string>
+    <string name="tab_controller">Tab controller</string>
 
 </resources>

@@ -46,6 +46,8 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 	private static final int REQUEST_ENABLE = 0;
 	private static final String TAG = "MeisterLampe startup";
 	public static final int MESSAGE_STATE_CHANGE = 0;
+	public static final int NUMBER_OF_CHANNELS = 10;
+	public static final int MAX_CHANNEL_VALUE = 255;
 	public static final int MESSAGE_WRITE = 1;
 	public static final int MESSAGE_READ = 2;
 	public static final int MESSAGE_TOAST = 3;
@@ -57,7 +59,7 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 	public static ArrayList<String> devices = new ArrayList<String>();
 	public static ArrayList<String> deviceAdresses = new ArrayList<String>();
 	public static ArrayList<String> errorLog = new ArrayList<String>();
-	private MLBluetoothService mChatService;
+	private MLBluetoothService mMLBluetoothService;
 	private static byte[] mInRxBuffer = new byte[1024];
 	private static int mInIndex = 0;
 	protected String EXTRA_DEVICE_ADDRESS;
@@ -66,17 +68,19 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 	private MLStartupActivity context;
 	private ProgressDialog dialog;
 	private Intent errorLogIntent = null;
+	private Intent xyTab = null;
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
 	public static final String RESET_HARDWARE = "reset_hardware";
 	private SeekBar bar;
-	
+	private Toast mToast; // Toast object to prevent overlapping Toasts
+
 	private final BroadcastReceiver mReceiver = new BroadcastReceiver()
 	{
 		@Override
 		public void onReceive(Context context, Intent intent)
 		{
 			final String action = intent.getAction();
-
+			Bundle extras = intent.getExtras();
 			if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
 			{
 				final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
@@ -87,12 +91,14 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 					break;
 				case BluetoothAdapter.STATE_TURNING_OFF:
 					setOutputText("Turning Bluetooth off...");
+					mMLBluetoothService.stop();
 					break;
 				case BluetoothAdapter.STATE_ON:
 					setOutputText("Bluetooth on");
 					break;
 				case BluetoothAdapter.STATE_TURNING_ON:
 					setOutputText("Turning Bluetooth on...");
+					mMLBluetoothService.start();
 					break;
 				}
 			}
@@ -107,26 +113,30 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 					devices.add(devString);
 					showDevices(devices);
 				}
-			}			
+			}
 			if (action.equals(MLErrorLog.READER_READY))
 			{
-				triggerAction(0);
+				triggerAction(0, extras);
+			}
+			if (action.equals(MLCoordView.SET_CHANNEL_VALUE))
+			{
+				triggerAction(3, extras);
 			}
 			if (action.equals(RESET_HARDWARE))
 			{
-				triggerAction(1);
+				triggerAction(1, extras);
 			}
 		}
 	};
-	
 
 	/** Called when the activity is first created. */
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		context = this;
-		
+
 		// load settings
 		MLSettings = PreferenceManager.getDefaultSharedPreferences(this);
 		setContentView(R.layout.main);
@@ -138,8 +148,9 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 			Toast.makeText(this, "This device does not support bluetooth!", Toast.LENGTH_LONG).show();
 			return;
 		}
-		bar = (SeekBar)findViewById(R.id.valuebar); // make seekbar object
-        bar.setOnSeekBarChangeListener(this); // set seekbar listener.
+		bar = (SeekBar) findViewById(R.id.valuebar); // make seekbar object
+		bar.setOnSeekBarChangeListener(this); // set seekbar listener.
+		mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT); // initialize 1 Toast and 1 Toast only!
 	}
 
 	public void onStart()
@@ -164,12 +175,12 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 		// important: unregister the Receiver for other purposes
 		unregisterReceiver(mReceiver);
 		super.onDestroy();
-		if (mChatService != null)
+		if (mMLBluetoothService != null)
 		{
-			mChatService.stop();
+			mMLBluetoothService.stop();
 		}
 	}
-	
+
 	public void onResume()
 	{
 		super.onResume();
@@ -185,43 +196,46 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 		getMenuInflater().inflate(R.menu.activity_startup_menu, menu);
 		return true;
 	}
-	
+
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-	    // Handle item selection
-	    switch (item.getItemId()) {
-	        case R.id.menu_error_log:
-	    		dialog = ProgressDialog.show(this, "", "Loading. Please wait...", true, true);
-	    		errorLog = new ArrayList<String>();
-	    		errorLogIntent = new Intent(context, MLErrorLog.class);					
-	    		startActivity(errorLogIntent);
-	            return true;
-	        case R.id.menu_reset:
-	        	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-	        	builder.setMessage("Are you sure you want to reset?")
-	        	       .setCancelable(false)
-	        	       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-	        	           public void onClick(DialogInterface dialog, int id) {
-	        	        	   Intent i = new Intent();
-	        	        	   i.setAction(MLStartupActivity.RESET_HARDWARE);
-	        	        	   sendBroadcast(i);
-	        	        	   dialog.cancel();
-	        	           }
-	        	       })
-	        	       .setNegativeButton("No", new DialogInterface.OnClickListener() {
-	        	           public void onClick(DialogInterface dialog, int id) {
-	        	                dialog.cancel();
-	        	           }
-	        	       });
-	        	AlertDialog alert = builder.create();
-	        	alert.show();
-	        	return true;
-	        default:
-	        	Toast.makeText(this, "Nothing here yet", Toast.LENGTH_SHORT).show();
-	            return super.onOptionsItemSelected(item);
-	    }
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		// Handle item selection
+		switch (item.getItemId())
+		{
+		case R.id.menu_error_log:
+			dialog = ProgressDialog.show(this, "", "Loading. Please wait...", true, true);
+			errorLog = new ArrayList<String>();
+			errorLogIntent = new Intent(context, MLErrorLog.class);
+			startActivity(errorLogIntent);
+			return true;
+		case R.id.menu_reset:
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setMessage("Are you sure you want to reset?").setCancelable(false).setPositiveButton("Yes", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int id)
+				{
+					Intent i = new Intent();
+					i.setAction(MLStartupActivity.RESET_HARDWARE);
+					sendBroadcast(i);
+					dialog.cancel();
+				}
+			}).setNegativeButton("No", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int id)
+				{
+					dialog.cancel();
+				}
+			});
+			AlertDialog alert = builder.create();
+			alert.show();
+			return true;
+		default:
+			Toast.makeText(this, "Nothing here yet", Toast.LENGTH_SHORT).show();
+			return super.onOptionsItemSelected(item);
+		}
 	}
-	
+
 	/** Called when the activity resumes from another task (subactivity) **/
 	public void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -245,35 +259,19 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 		}
 	}
 
-//	@Override
-//    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-//    	// TODO Auto-generated method stub
-//
-//		SeekBar bar = (SeekBar)findViewById(R.id.valuebar); // make seekbar object
-//    	// change progress text label with current seekbar value
-//    	Log.i(TAG, "Value of slider: " + progress);
-//
-//    }
-	
 	public void setupML()
 	{
 		showDevices(mBtAdapter.getBondedDevices());
-		IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-		registerReceiver(mReceiver, filter);
-		
-		filter = new IntentFilter(MLErrorLog.READER_READY);
-		registerReceiver(mReceiver, filter);
-		
-		filter = new IntentFilter(RESET_HARDWARE);
-		registerReceiver(mReceiver, filter);
-		
+
+		registerReceivers();
+
 		// Initialize the MLBluetoothService to perform bluetooth connections
-		mChatService = new MLBluetoothService(this, mHandler);
+		mMLBluetoothService = new MLBluetoothService(this, mHandler);
 
 		if (!MLSettings.getString("MLAddress", "").isEmpty())
 		{
 			BluetoothDevice device = mBtAdapter.getRemoteDevice(MLSettings.getString("MLAddress", ""));
-			mChatService.connect(device, true);
+			mMLBluetoothService.connect(device, true);
 		} else
 		{
 			// start to discover bluetooth devices
@@ -284,13 +282,31 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 		}
 	}
 
+	private void registerReceivers()
+	{
+		IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+		registerReceiver(mReceiver, filter);
+
+		filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+		registerReceiver(mReceiver, filter);
+
+		filter = new IntentFilter(MLErrorLog.READER_READY);
+		registerReceiver(mReceiver, filter);
+
+		filter = new IntentFilter(RESET_HARDWARE);
+		registerReceiver(mReceiver, filter);
+
+		filter = new IntentFilter(MLCoordView.SET_CHANNEL_VALUE);
+		registerReceiver(mReceiver, filter);
+	}
+
 	public void start_callback(View v)
 	{
 		byte[] message = null;
 		byte[] onCommand = { 0x02, -1, -1, 0x00, 0x02, 0x0D, 0x0A };
 		byte[] offCommand = { 0x03, -1, -1, 0x00, 0x03, 0x0D, 0x0A };
 		byte[] getCCCommand = { 0x10, -1, -1, 0x00, 0x10, 0x0D, 0x0A };
-		
+
 		if (mOnOffFlag)
 		{
 			message = offCommand;
@@ -303,26 +319,32 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 
 		mOnOffFlag = !mOnOffFlag;
 
-		sendMessage(message);		
+		sendMessage(message);
 		sendMessage(getCCCommand);
 	}
 
-	public void help_callback(View v)
-	{		
-		triggerAction(2);
+	public void xyTab_callback(View v)
+	{
+		xyTab = new Intent(this, MLCoordView.class);
+		startActivity(xyTab);
 	}
-		
+
+	public void help_callback(View v)
+	{
+		triggerAction(2, null);
+	}
+
 	public void quit_callback(View v)
 	{
 		finish();
 	}
 
-	public void triggerAction(int actionID)
+	public void triggerAction(int actionID, Bundle extras)
 	{
 		if (actionID == 0)
 		{
 			byte[] getErrorLog = { 0x13, -1, -1, 0x00, 0x13, 0x0D, 0x0A };
-			sendMessage(getErrorLog);			
+			sendMessage(getErrorLog);
 		}
 		if (actionID == 1)
 		{
@@ -334,20 +356,32 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 			byte[] setAllToSweep = { 0x4, -1, -1, 0x03, 0x7, 0x0D, 0x0A };
 			sendMessage(setAllToSweep);
 		}
+		if (actionID == 3 && extras != null)
+		{
+			int channel = extras.getInt(MLCoordView.XY_CHANNEL);
+			byte chanHigh = (byte) (((0x01 << channel) & 0xFF00) >> 0x08);
+			byte chanLow = (byte) ((0x01 << channel) & 0x00FF);
+			int value = extras.getInt(MLCoordView.XY_VALUE);
+			byte checksum = (byte) ((value + 0x06) & 0xFF);
+			byte[] setValue = { 0x6, chanHigh, chanLow, (byte) value, checksum, 0x0D, 0x0A };
+			sendMessage(setValue);
+		}
 	}
-	
+
 	/**
 	 * Sends a message.
 	 * 
 	 * @param message
 	 *            A string of text to send.
 	 */
-	private void sendMessage(String message)
+	public void sendMessage(String message)
 	{
 		// Check that we're actually connected before trying anything
-		if (mChatService.getState() != MLBluetoothService.STATE_CONNECTED)
+		if (mMLBluetoothService.getState() != MLBluetoothService.STATE_CONNECTED)
 		{
-			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+			
+			mToast.setText(R.string.not_connected);
+			mToast.show();
 			return;
 		}
 
@@ -356,7 +390,7 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 		{
 			// Get the message bytes and tell the MLBluetoothService to write
 			byte[] send = message.getBytes();
-			mChatService.write(send);
+			mMLBluetoothService.write(send);
 
 		}
 	}
@@ -364,16 +398,17 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 	private void sendMessage(byte[] message)
 	{
 		// Check that we're actually connected before trying anything
-		if (mChatService.getState() != MLBluetoothService.STATE_CONNECTED)
+		if (mMLBluetoothService.getState() != MLBluetoothService.STATE_CONNECTED)
 		{
-			Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+			mToast.setText(R.string.not_connected);
+			mToast.show();
 			return;
 		}
 		REQUEST_NUMBER = message[0] & 0x0F;
 		// Check that there's actually something to send
 		if (message.length > 0)
 		{
-			mChatService.write(message);
+			mMLBluetoothService.write(message);
 
 		}
 	}
@@ -410,7 +445,7 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 				byte[] writeBuf = (byte[]) msg.obj;
 				break;
 			case MESSAGE_READ:
-				byte[] readBuf = (byte[]) msg.obj;				
+				byte[] readBuf = (byte[]) msg.obj;
 				if (REQUEST_NUMBER == 3)
 				{
 					Log.i(TAG, "Incoming error log data");
@@ -418,8 +453,8 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 					long sysTime = (errorEntry & 0x00FFF);
 					long fwError = (errorEntry & 0xFF000) >> 12;
 					errorLog.add("Error number: " + fwError + "\nOccured after: " + sysTime);
-					//showDevices(errorLog);
-					
+					// showDevices(errorLog);
+
 					Intent i = new Intent();
 					i.setAction(NEW_LOG_ENTRY);
 					i.putExtra("EXTRA_ERROR_LOG", errorLog);
@@ -496,7 +531,7 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 			BluetoothDevice device = mBtAdapter.getRemoteDevice(EXTRA_DEVICE_ADDRESS);
 			setPref("MLAddress", EXTRA_DEVICE_ADDRESS);
 			// Attempt to connect to the device
-			mChatService.connect(device, false);
+			mMLBluetoothService.connect(device, false);
 		}
 	};
 
@@ -546,26 +581,26 @@ public class MLStartupActivity extends Activity implements OnSeekBarChangeListen
 	public void onStartTrackingTouch(SeekBar arg0)
 	{
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onStopTrackingTouch(SeekBar arg0)
 	{
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
 	{
-		bar = (SeekBar)findViewById(R.id.valuebar); // make seekbar object
-//    	// change progress text label with current seekbar value
-    	
-    	byte checksum = (byte) ((progress + 0x06) & 0xFF);
-    	byte[] message = new byte[]{0x06, -1, -1, (byte)progress, checksum , 0xD, 0xA};
-    	Log.i(TAG, "Value of slider: " + progress + "Checksum: " + checksum);
-    	sendMessage(message);
-		
+		bar = (SeekBar) findViewById(R.id.valuebar); // make seekbar object
+		// // change progress text label with current seekbar value
+
+		byte checksum = (byte) ((progress + 0x06) & 0xFF);
+		byte[] message = new byte[] { 0x06, -1, -1, (byte) progress, checksum, 0xD, 0xA };
+		Log.i(TAG, "Value of slider: " + progress + "Checksum: " + checksum);
+		sendMessage(message);
+
 	}
 }
