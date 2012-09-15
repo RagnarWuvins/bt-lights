@@ -145,9 +145,6 @@ namespace BTLights
                             break;
                         default:
                             Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
-#if DEBUG
-                            Debug.Print("Wrong function index: " + functionIndex);
-#endif
                             break;
                     }
                     break;

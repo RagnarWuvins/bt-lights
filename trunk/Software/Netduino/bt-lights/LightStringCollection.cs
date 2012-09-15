@@ -6,9 +6,9 @@ using Microsoft.SPOT.Hardware;
 namespace BTLights
 {
     public class LightStringCollection
-    {
+    {       
         public LightString[] channels;
-        public event NativeEventHandler SendChannelData;
+        public event BTEvent SendChannelData;
 
         private static Timer[] channelTimers = null;
         private static TimerCallback[] channelTimerDelegates = null; 
@@ -45,11 +45,11 @@ namespace BTLights
             _SPIBus.WriteRead(_WriteBuffer, _ReadBuffer);
         }
 
-        public void ChannelCommandHandler(uint lsCmd, uint value, DateTime time)
+        public void ChannelCommandHandler(object sender, BTEventArgs e)
         {
-            int channel = (int)(lsCmd & Constants.G_CHANNEL_ADR_MASK);
-            int mode = ((int)lsCmd >> Constants.G_MAX_ADDRESS);
-            Debug.Print("Channel " + channel + ", Mode " + mode + ", Value " + value);
+            int channel = e.CommandAddress;
+            int mode = e.CommandMode;
+            int value = e.CommandValue;
             switch(mode)
             {
                 case (int)Constants.MODE.FUNC:
@@ -149,15 +149,13 @@ namespace BTLights
             {
                 if (((channel >> i) & 0x1) == 1)
                 {
-                    uint s_command = 0;
-                    uint s_address = (uint)(0x1 << i);
-                    uint curValue = (uint)channels[i].Value;
-                    s_command |= ((uint)Constants.CLASS.CC_CMD << 28);
-                    s_command |= ((uint)Constants.MODE.CMD_GET_VAL << 24);
-                    s_command |= ((uint)s_address << 8);
-                    s_command |= curValue;
-                    uint s_crc = (uint)(((uint)Constants.CLASS.CC_CMD << 4) | (uint)Constants.MODE.CMD_GET_VAL) + curValue;
-                    SendChannelData(s_command, s_crc, DateTime.Now);
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.MODE.CMD_GET_VAL;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.MODE.CMD_GET_VAL) + channels[i].Value;
+                    e.CommandValue = channels[i].Value;
+                    SendChannelData(this, e);
                 }
             }
         }
@@ -168,15 +166,13 @@ namespace BTLights
             {
                 if (((channel >> i) & 0x1) == 1)
                 {
-                    uint s_command = 0;
-                    uint s_address = (uint)(0x1 << i);
-                    uint curValue = (uint)channels[i].mode;
-                    s_command |= ((uint)Constants.CLASS.CC_CMD << 28);
-                    s_command |= ((uint)Constants.MODE.CMD_GET_VAL << 24);
-                    s_command |= ((uint)s_address << 8);
-                    s_command |= curValue;
-                    uint s_crc = (uint)(((uint)Constants.CLASS.CC_CMD << 4) | (uint)Constants.MODE.CMD_GET_VAL) + curValue;
-                    SendChannelData(s_command, s_crc, DateTime.Now);
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.MODE.CMD_GET_VAL;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.MODE.CMD_GET_VAL) + channels[i].mode;
+                    e.CommandValue = channels[i].mode;
+                    SendChannelData(this, e);
                 }
             }
         }
@@ -274,8 +270,6 @@ namespace BTLights
                 if (((channel >> i) & 0x1) == 1)
                 {
                     channels[i].dimState = 0;
-                    //channelTimers[i].Dispose();
-                    //channelTimers[i] = new Timer(channelTimerDelegates[i], null, channels[i].timerDelay, channels[i].timerPeriod);
                 }
             }
         }

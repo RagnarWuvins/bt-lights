@@ -36,12 +36,14 @@ namespace BTLights
 
         public enum FW_ERRORS
         {
-            CMD_UNKNOWN,        // just unknown command (maybe came through checksum by incident)
-            CMD_CORRUPT,        // not a channel (internal) command
-            CMD_ASSERT_FAIL,    // it was neither internal nor external (maybe length 0)
-            INTERPRETATION_ERROR,    // to many commands comming in
-            WRONG_FUNCTION_POINTER, // this functioin is not declared for channels
-            CHANNEL_VALUE_ASSERT,   // the channel changed its value very fast, this should not happen accidently
+            CMD_UNKNOWN,            // 0x00: just unknown command (maybe came through checksum by incident)
+            CMD_CORRUPT,            // 0x01: not a channel (internal) command
+            CMD_ASSERT_FAIL,        // 0x02: it was neither internal nor external (maybe length 0)
+            INTERPRETATION_ERROR,   // 0x03: to many commands comming in
+            WRONG_FUNCTION_POINTER, // 0x04: 0x00: this functioin is not declared for channels
+            CHANNEL_VALUE_ASSERT,   // 0x05: the channel changed its value very fast, this should not happen accidently
+            EXTRACT_RACE_CONDITION, // 0x06: a race condition occured while extracting the command
+            BUFFER_INDEX_OUT_RANGE, // 0x07: The buffer write or read pointer are out of range
         };
 
         public enum CLASS
@@ -75,14 +77,15 @@ namespace BTLights
 
         public enum COMMANDS
         {
-            CMD_GC_GET_CC,         // Get the command counter
-            CMD_GC_RESET_CC,       // Reset the command counter
-            CMD_GC_CPU, // get the current cpu usage
-            CMD_ERROR, // trace out the error log
-            //CMD_INC_PWM,    // increase PWM by 10 until 200 then go back to 10
-            CMD_RESET_ALL,  // reset all channels
-            CMD_RESET_SYSTEM,
-            CMD_NUM,    // Number of commands must be end of enum
+            CMD_GC_GET_CC,      // 0x00: Get the command counter
+            CMD_GC_RESET_CC,    // 0x01: Reset the command counter
+            CMD_GC_CPU,         // 0x02: get the current cpu usage
+            CMD_ERROR,          // 0x03: trace out the error log
+            CMD_RESET_ALL,      // 0x04: reset all channels
+            CMD_RESET_SYSTEM,   // 0x05: Do a hardware reset
+            CMD_GET_SYS_TIME,   // 0x06: Get the time on the board
+            CMD_GET_VERSION,    // 0x07: Get the hardware version
+            CMD_NUM,            // Number of commands must be end of enum
         };
 
         public enum FUNCTIONS
