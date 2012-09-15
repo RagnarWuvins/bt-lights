@@ -16,18 +16,19 @@ This page gives an overview of the used SPP Serial protocol
 == Command Types ==
 
 ==Channel mode (4bit)[4:7]:==
-||No Change||0x00||no change of current mode||
-||Direct Mode||0x01||set value||
-||On||0x02||set to On||
-||Off||0x03||set to off||
-||Func||0x04||set a preprogrammed function||
-||Get value||0x05||Get value of channel(s)||
-||Set value||0x06||Set value of channel(s)||
-||Set Max||0x07||set maximum value of channel(s)||
-||Set Min||0x08||set minimum value of channel(s)||
-||Set Delay||0x09||set delay value of channel(s)||
-||Set Period||0x0A||set period value of channel(s)||
-||Restart||0x0B||restart timer of channel(s)||
+|| *Command* || *Value* || *Description* || *Remark* ||
+||No Change||0x00||no change of current mode||||
+||Direct Mode||0x01||set value||||
+||On||0x02||set to On||||
+||Off||0x03||set to off||||
+||Func||0x04||set a preprogrammed function||||
+||Get value||0x05||Get value of channel(s)|| If the value in the query is > 0 then the mode is returned||
+||Set value||0x06||Set value of channel(s)||||
+||Set Max||0x07||set maximum value of channel(s)||||
+||Set Min||0x08||set minimum value of channel(s)||||
+||Set Delay||0x09||set delay value of channel(s)||||
+||Set Period||0x0A||set period value of channel(s)||||
+||Restart||0x0B||restart timer of channel(s)||||
 
 ==Address (16bit)[8:23]:==
 Channels can be address by a seperate bit in the command. Thus making it possible to send
