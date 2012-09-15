@@ -53,11 +53,15 @@ Set channel 1 to fade (value doesn't matter)
 As seen in the channel command section it is possible to send global commands:
 
 ==Global mode(4bit)[4:7]:==
-||Get the command counter||0x00||
-||Reset the command counter||0x01||
-||get the current cpu usage||0x02||
-||trace out the error log||0x03||
-||reset all channels||0x04||
+|| *Command* || *Value* || *Remark* ||
+|| Get the command counter || 0x00 ||  ||
+|| Reset the command counter || 0x01 ||  ||
+|| Get the current cpu usage || 0x02 ||  ||
+|| Trace out the error log || 0x03 ||  ||
+|| Reset all channels || 0x04 ||  ||
+|| Reset the hardware || 0x05 || Connection will be lost for a while ||
+|| Get the system up time || 0x06 ||  ||
+|| Get the hardware version and build number || 0x06 || Encoded in the nibbles of the value (higher nibble > HW, lower nibble > Build) ||
 
 Example:
 Read the error log (value and address are not important but will be checked by checksum anyways)
@@ -85,3 +89,5 @@ The CLA and MOD are currently "don't care" but will be corrected in a future rel
 || INTERPRETATION_ERROR || Too long or bad command || Too many commands comming in ||
 || WRONG_FUNCTION_POINTER || Function is not valid || This functioin (fade, in, ou) is not declared for channels ||
 || CHANNEL_VALUE_ASSERT || Value assertion error || the channel changed its value very fast, this should not happen accidently ||
+|| EXTRACT_RACE_CONDITION || Rade condition while extract || The commands are analysed by multiple threads. If the access the same buffer this error will be thrown (uncritical) ||
+|| BUFFER_INDEX_OUT_RANGE || Read or write buffer are out of range || if the temporary buffers grows larger then the internal buffer (no time to collect the commands) ||
