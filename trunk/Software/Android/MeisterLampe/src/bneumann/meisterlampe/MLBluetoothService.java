@@ -16,11 +16,8 @@
 
 package bneumann.meisterlampe;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.UUID;
 import android.bluetooth.BluetoothAdapter;
@@ -42,12 +39,12 @@ import android.util.Log;
 public class MLBluetoothService
 {
 	// Debugging
-	private static final String TAG = "BluetoothChatService";
+	private static final String TAG = "BluetoothService";
 	private static final boolean D = true;
 
 	// Name for the SDP record when creating server socket
-	private static final String NAME_SECURE = "BluetoothChatSecure";
-	private static final String NAME_INSECURE = "BluetoothChatInsecure";
+	private static final String NAME_SECURE = "BluetoothMLSecure";
+	private static final String NAME_INSECURE = "BluetoothMLInsecure";
 	// Unique UUID for this application
 
 	private static final UUID MY_UUID_SECURE = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -237,7 +234,7 @@ public class MLBluetoothService
 
 		setState(STATE_CONNECTED);
 	}
-
+	
 	/**
 	 * Stop all threads
 	 */
@@ -623,47 +620,6 @@ public class MLBluetoothService
 			}
 		}
 
-	}
-
-	public class LineReader
-	{
-		private boolean doDiscardNl;
-		private BufferedReader br;
-
-		public LineReader(BufferedReader br)
-		{
-			this.br = br;
-		}
-
-		public byte[] readLine() throws IOException
-		{
-			StringBuilder sb = new StringBuilder();
-			int i;
-			while (0 <= (i = br.read()))
-			{
-				if (i == '\n')
-				{
-					if (doDiscardNl)
-					{
-						doDiscardNl = false;
-					} else
-					{
-						sb.append((char) '\n');
-						break;
-					}
-				} else
-				{
-					doDiscardNl = false;
-					sb.append((char) i);
-					if (i == '\r')
-					{
-						doDiscardNl = true;
-						break;
-					}
-				}
-			}
-			return sb.toString().getBytes();
-		}
 	}
 
 }
