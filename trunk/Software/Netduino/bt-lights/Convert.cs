@@ -1,5 +1,6 @@
 using System;
 using Microsoft.SPOT;
+using System.Text;
 
 namespace BTLights
 {
@@ -18,6 +19,24 @@ namespace BTLights
                 output[i] = (byte)(value & 0xFF);
                 value >>= 8;
             }
+            return output;
+        }
+
+        public static string ByteArrayToString(byte[] arr)
+        {
+            String output = "";
+            try
+            {
+                output = new String(Encoding.UTF8.GetChars(arr));
+                if (output != null)
+                {
+                    output = output.Trim();
+                }                
+            }
+            catch(UnknownTypeException e)
+            {
+                Program.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
+            }            
             return output;
         }
     }

@@ -13,7 +13,7 @@ namespace BTLights
 {
     class Program
     {
-        public const int HW_VERSION = 1;
+        public const int HW_VERSION = 2;
         public const int HW_BUILD = 1;
         public static SPI.Configuration _MAX;
         public static SPI _SPIBus;
@@ -35,6 +35,9 @@ namespace BTLights
         private static TimerCallback ditherCallback;
         private static Timer ditherTimer;
         private static CommandHandler mCommandHandler;
+        private static TimerCallback mTimerCallback;
+        private static Timer mTimer;
+
 
         public static void Main()
         {
@@ -70,7 +73,7 @@ namespace BTLights
             // define the channels and the handler.
             channels = new LightStringCollection(Constants.G_SET_ADDRESS, _SPIBus);
             // setting up the serial port for the communication to the BT module
-            _BT = new BTModule("COM1", 38400, Parity.None, 8, StopBits.One);
+            _BT = new BTModule("COM1", 19200, Parity.None, 8, StopBits.One);
             // create a new command Handler
             mCommandHandler = new CommandHandler();
 
@@ -80,11 +83,17 @@ namespace BTLights
             // Set up the command handler
             mCommandHandler.ChannelRequest += new BTEvent(channels.ChannelCommandHandler);
             mCommandHandler.GlobalRequest += new BTEvent(GlobalCommandHandler);
+            mCommandHandler.ExternalRequest += new BTEvent(ExternalCommandHandler);
+            mCommandHandler.ExternalRequest += new BTEvent(_BT.SaveReply);
 
             // Starting initilization
             // Only for first initialization. Damn got no EEProm to save that state?!
-            _BT.dump(Constants.BT_INIT_SLOW);
-            _BT.Reset(); // make a reset so we can detect the board from all devices
+            //_BT.Reset(); // make a reset so we can detect the board from all devices
+            _BT.dump(Constants.BT_INIT_BTM222);
+
+            // after 5 minutes the BT module will be reset in order to prevent blocking
+            mTimerCallback = new TimerCallback(resetBTModule);
+            mTimer = new Timer(mTimerCallback, null, Constants.BT_TIMEOUT, 0);
 
             Thread.Sleep(-1);
         }
@@ -100,6 +109,20 @@ namespace BTLights
                 _PWMRate = Constants.PWM_INIT;
             }
             _Ext_PWM.SetPulse(_PWMRate, (_PWMRate / 2));
+        }
+
+        private static void resetBTModule(object sender)
+        {
+            _BT.Reset();
+            mTimer.Dispose();
+        }
+
+        public static void restartBTTimer()
+        {
+            if (mTimer != null)
+            {
+                mTimer.Change(Constants.BT_TIMEOUT, 0);
+            }
         }
 
         public static void SendChannelData(object sender, BTEventArgs e)
@@ -153,9 +176,16 @@ namespace BTLights
                     data[4] = (byte)(data[0] + data[3]);
                     _BT.send2BT(data);
                     break;
+                case(int)Constants.COMMANDS.CMD_RESET_BT:
+                    _BT.Reset();
+                    break;
                 default:
                     break;
             }
+        }
+        public static void ExternalCommandHandler(object sender, BTEventArgs e)
+        {
+            Debug.Print("EXT: " + Convert.ByteArrayToString(e.CommandRaw));
         }
 
         public static void THROW_ERROR(object error, String addOutput = "")

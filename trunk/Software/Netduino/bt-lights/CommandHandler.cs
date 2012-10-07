@@ -10,7 +10,7 @@ namespace BTLights
 {
     public class CommandHandler
     {
-        public event BTEvent ChannelRequest, GlobalRequest;
+        public event BTEvent ChannelRequest, GlobalRequest, ExternalRequest;
         public static int CommandCounter = 0;
 
         //|CLA |MOD |       ADR         |   VAL   |   CRC   | 
@@ -49,6 +49,7 @@ namespace BTLights
                 Program.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
                 return;
             }
+            BTEventArgs e = new BTEventArgs();
             if (mRawCommand.Length == Constants.C_LENGTH)
             {
                 this.mClass = (byte)(mRawCommand[0] >> 4);
@@ -64,13 +65,14 @@ namespace BTLights
             if (!mInternalCommand)
             {
                 Program.THROW_ERROR(Constants.FW_ERRORS.CMD_CORRUPT);
+                e.CommandRaw = mRawCommand;
+                ExternalRequest(this, e);
             }
             else
             {
                 Debug.Print("SplitCommand:\nClass: " + mClass + "\nMode: " + mMode + "\nAddress: " +mAddress + "\nValue: " + mValue);
                 
-                CommandCounter++;
-                BTEventArgs e = new BTEventArgs();
+                CommandCounter++;                
                 e.CommandClass = mClass;
                 e.CommandAddress = mAddress;
                 e.CommandMode = mMode;

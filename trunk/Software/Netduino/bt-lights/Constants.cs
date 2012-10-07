@@ -28,6 +28,7 @@ namespace BTLights
         public static int BAUDRATE = 38400; // Global baudrate (default: 38400)
         public static int ERROR_LOG_LENGTH = 256; // Length of error log
         public static int MAX_CHANNEL_DISSAPATION = 128; // value changes should not exceed this limit
+        public static int BT_TIMEOUT = 300000;    // time before bluetooth module resets (5 minutes)
 #if TARGET
         public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2; // AT pin to switch to bluetooth service commands
         public static Microsoft.SPOT.Hardware.Cpu.Pin PWM = Pins.GPIO_PIN_D9;   // PWM pin to control the PWM clock of the SPI module
@@ -44,6 +45,7 @@ namespace BTLights
             CHANNEL_VALUE_ASSERT,   // 0x05: the channel changed its value very fast, this should not happen accidently
             EXTRACT_RACE_CONDITION, // 0x06: a race condition occured while extracting the command
             BUFFER_INDEX_OUT_RANGE, // 0x07: The buffer write or read pointer are out of range
+            TYPE_CAST_FAILED,       // 0x08: While casting from byte to another type the system encountered an error
         };
 
         public enum CLASS
@@ -85,6 +87,7 @@ namespace BTLights
             CMD_RESET_SYSTEM,   // 0x05: Do a hardware reset
             CMD_GET_SYS_TIME,   // 0x06: Get the time on the board
             CMD_GET_VERSION,    // 0x07: Get the hardware version
+            CMD_RESET_BT,       // 0x08: Reset the BT module only
             CMD_NUM,            // Number of commands must be end of enum
         };
 
@@ -100,12 +103,15 @@ namespace BTLights
         /// Bluetooth module definition block. Contains all needed constants and support functions
         /// </summary>
         #region Bluetooth module definition block
-        public static string[] BT_INIT_SLOW = {    
-            "at+class=820118", //"at+class=240404",
+        public static string[] BT_INIT_SLOW = {
+            "at+class=820118", 
+            //"at+class=240404",
             "at+role=0",
             "at+name=Meister Lampe",
             "at+uart=38400,0,0",
             "at+inqm=1,9,48",
+            "at+rmaad",
+            "at+adcn?",
             "at+state?"    // current state of BT module
                                         };
         public static string[] BT_INIT_FAST = {
@@ -118,9 +124,15 @@ namespace BTLights
             "at+uart?",
             "at+state?"    // current state of BT module
                                         };
+
+        public static string[] BT_INIT_BTM222 = {
+            "ATN=Meister Lampe",
+            "ATE0"
+                                                };
+
+
         public static string[] BT_RESET = {
             "at+orgl",
-            "at+class=240404",
             };
         public static string[] BT_BAUD1 = {
             "at+uart=9600,0,0",

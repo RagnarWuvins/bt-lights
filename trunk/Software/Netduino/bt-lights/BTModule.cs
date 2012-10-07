@@ -16,16 +16,26 @@ namespace BTLights
         private OutputPort mATPin;
         private OutputPort mResetPin;
         private static byte[] mReadBuffer = new Byte[bufferMax];
+        private string[] mATreply = new string[5];  // store the last 5 incoming commands
+        private int mATreplyIndex = 0;
         private static int _writeIndex = 0, _readIndex = 0;
         private static byte[] _writeBuffer;
         private static int mCommandExtractCounter = 0; // must be 0 at all times
         /// <summary>Event that is called when a command is received (Termination is \r\n or 0xA, 0xD)</summary>
         public event BTEvent CommandReceived;
-        //public event NativeEventHandler CommandReceived = null;
-        
-        
 
-
+        public enum STATES
+        {
+            INITIALIZED,    // initialized status
+            READY,          // ready status
+            PAIRABLE,       // pairable status
+            PAIRED,         // paired status
+            INQUIRING,      // inquiring status
+            CONNECTING,     // connecting status
+            CONNECTED,      // connected status
+            DISCONNECTED,   // disconnected
+            UNKNOWN,        // no reply or something
+        }
         const int bufferMax = 256;
         const int numOfBuffer = 2;        
 
@@ -153,14 +163,87 @@ namespace BTLights
         /// <param name="commands">String array of commands</param>
         public void dump(string[] commands)
         {
+            dump(commands, true);
+        }
+
+        /// <summary>
+        /// Send a complete array of string to the module
+        /// </summary>
+        /// <param name="commands">String array of commands</param>
+        /// <param name="fastMode">If the commands should be send as fast as possible</param>
+        public void dump(string[] commands, bool fastMode)
+        {
             mATPin.Write(true);
-            Thread.Sleep(200);
+            if (!fastMode)
+            {
+                Thread.Sleep(200);
+            }
             foreach (string command in commands)
             {
                 send2BT(command);
-                Thread.Sleep(100);
+                if (!fastMode)
+                {
+                    Thread.Sleep(100);
+                }
+                else
+                {
+                    Thread.Sleep(100);
+                }
             }
             mATPin.Write(false);
+        }
+
+        /// <summary>
+        /// Connection status of the module
+        /// </summary>
+        public int ConnectionStatus
+        {
+            get 
+            {
+                int lastIndex = mATreplyIndex;
+                dump(new string[]{"at+state?"});
+                STATES state = STATES.UNKNOWN;
+                switch (mATreply[lastIndex])
+                {
+                    case "+STATE:INITIALIZED":
+                        state =  STATES.INITIALIZED;
+                        break;
+                    case "+STATE:READY":
+                        state =  STATES.READY;
+                        break;
+                    case "+STATE:PAIRABLE":
+                        state =  STATES.PAIRABLE;
+                        break;
+                    case "+STATE:PAIRED":
+                        state =  STATES.PAIRED;
+                        break;
+                    case "+STATE:INQUIRING":
+                        state =  STATES.INQUIRING;
+                        break;
+                    case "+STATE:CONNECTING":
+                        state =  STATES.CONNECTING;
+                        break;
+                    case "+STATE:CONNECTED":
+                        state =  STATES.CONNECTED;
+                        break;
+                    case "+STATE: DISCONNECTED":
+                        state =  STATES.DISCONNECTED;
+                        break;
+                    default:
+                        break;
+                }
+                return (int)state;
+            }
+        }
+
+        public void SaveReply(object sender, BTEventArgs e)
+        {
+            mATreply[mATreplyIndex] = Convert.ByteArrayToString(e.CommandRaw);
+            mATreplyIndex++;
+            if (mATreplyIndex > mATreply.Length - 1)
+            {
+                mATreplyIndex = 0;
+            }
         }
 
         // This is the IRQ handler that signals the main routine that a command is there
@@ -196,7 +279,9 @@ namespace BTLights
                 Read(mReadBuffer, _writeIndex, curBufferLength);
                 _writeIndex += curBufferLength;
             }            
-            startCommandReceive();         
+            startCommandReceive();
+            // restart the 5 minute timer
+            Program.restartBTTimer();
         }
 
         /// <summary>
@@ -229,6 +314,8 @@ namespace BTLights
         public void flushBuffer(bool readBufOnly = false)
         {
             mReadBuffer = new byte[bufferMax];
+            mATreply = new string[mATreply.Length];
+            mATreplyIndex = 0;
             _readIndex = 0;
             if (!readBufOnly)
             {
@@ -263,7 +350,7 @@ namespace BTLights
             int dataInBufferLength = 0;
             BTEventArgs e = new BTEventArgs();
             if (writeIndex < readIndex)
-            {                
+            {
                 for (int index = 0; index < writeIndex; index++)
                 {
                     if (mReadBuffer[index] == 0x0A)
@@ -303,6 +390,7 @@ namespace BTLights
             if (mCommandExtractCounter != 0)
             {
                 Program.THROW_ERROR(Constants.FW_ERRORS.EXTRACT_RACE_CONDITION);
+                mCommandExtractCounter = 0;
             }
         }
     }

@@ -27,7 +27,8 @@
     <DefineConstants>RELEASE,TARGET, MF_FRAMEWORK_VERSION_V4_1,MF_FRAMEWORK_VERSION_V4_1,MF_FRAMEWORK_VERSION_V4_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\doc\documentation.xml</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugGUI|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
