@@ -62,6 +62,7 @@ As seen in the channel command section it is possible to send global commands:
 || Reset the hardware || 0x05 || Connection will be lost for a while ||
 || Get the system up time || 0x06 ||  ||
 || Get the hardware version and build number || 0x06 || Encoded in the nibbles of the value (higher nibble > HW, lower nibble > Build) ||
+|| Reset the Bluetooth module || 0x07 || Resets the BT module only, Hardware keeps running ||
 
 Example:
 Read the error log (value and address are not important but will be checked by checksum anyways)
@@ -91,3 +92,5 @@ The CLA and MOD are currently "don't care" but will be corrected in a future rel
 || CHANNEL_VALUE_ASSERT || Value assertion error || the channel changed its value very fast, this should not happen accidently ||
 || EXTRACT_RACE_CONDITION || Rade condition while extract || The commands are analysed by multiple threads. If the access the same buffer this error will be thrown (uncritical) ||
 || BUFFER_INDEX_OUT_RANGE || Read or write buffer are out of range || if the temporary buffers grows larger then the internal buffer (no time to collect the commands) ||
+||BUFFER_INDEX_OUT_RANGE || buffer index out of range || The buffer write or read pointer are out of range ||
+|| TYPE_CAST_FAILED || Type cast gone wrong || While casting from byte to another type the system encountered an error ||
