@@ -36,7 +36,7 @@ namespace BTLights
             DISCONNECTED,   // disconnected
             UNKNOWN,        // no reply or something
         }
-        const int bufferMax = 256;
+        const int bufferMax = 70;
         const int numOfBuffer = 2;        
 
         /// <summary>

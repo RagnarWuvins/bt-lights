@@ -46,6 +46,7 @@ namespace BTLights
             EXTRACT_RACE_CONDITION, // 0x06: a race condition occured while extracting the command
             BUFFER_INDEX_OUT_RANGE, // 0x07: The buffer write or read pointer are out of range
             TYPE_CAST_FAILED,       // 0x08: While casting from byte to another type the system encountered an error
+            WRONG_MODE_POINTER,     // 0x09: Wrong mode set. Will be set to NOOP instead
         };
 
         public enum CLASS
@@ -59,29 +60,38 @@ namespace BTLights
 
         public enum MODE
         {
-            NOOP, 	// no change of current mode
-            DIRECT,	// Use channel value
-            ON,     // On value
-            OFF,    // Off value
-            FUNC,	// set Function
-            // now the commands start
-            CMD_GET_VAL,    // get current value
-            CMD_SET_VAL,    // set current value
-            CMD_SET_MAX,    // set the maximum value
-            CMD_SET_MIN,    // set the minimum value
-            CMD_SET_DELAY,    // set the timer delay
-            CMD_SET_PERIOD, // set the timer period
-            CMD_SET_RISE, // set rise modifier
-            CMD_SET_OFFSET, // set offset modifier
-            CMD_RESTART,    // restart the timer
-            CMD_NUM,    // Number of commands must be end of enum
+            NOOP, 	        // no change of current mode
+            DIRECT,	        // Use channel value
+            ON,             // On value
+            OFF,            // Off value
+            FUNC,	        // set Function
+            NUM_OF_MODES,   // Number of modes
+        }
+        public enum COMMAND
+        {
+            CMD_SET_MODE,   // 0x00: Set the channel mode
+            CMD_GET_MODE,   // 0x01: Get the channel mode
+            CMD_SET_VAL,    // 0x02: Set current value
+            CMD_GET_VAL,    // 0x03: Get current value            
+            CMD_SET_MAX,    // 0x04: Set the maximum value
+            CMD_GET_MAX,    // 0x05: Get the maximum value
+            CMD_SET_MIN,    // 0x06: Set the minimum value
+            CMD_GET_MIN,    // 0x07: Get the minimum value
+            CMD_SET_DELAY,  // 0x08: Set the timer delay
+            CMD_GET_DELAY,  // 0x09: Get the timer delay
+            CMD_SET_PERIOD, // 0x0A: Set the timer period
+            CMD_GET_PERIOD, // 0x0B: Get the timer period
+            CMD_SET_RISE,   // 0x0C: Set rise modifier
+            CMD_SET_OFFSET, // 0x0D: Set offset modifier
+            CMD_RESTART,    // 0x0E: Reset the channel timer     
+            CMD_NUM,        // Number of commands must be end of enum
         }
 
-        public enum COMMANDS
+        public enum GLOBAL_COMMAND
         {
-            CMD_GC_GET_CC,      // 0x00: Get the command counter
-            CMD_GC_RESET_CC,    // 0x01: Reset the command counter
-            CMD_GC_CPU,         // 0x02: get the current cpu usage
+            CMD_GET_CC,         // 0x00: Get the command counter
+            CMD_RESET_CC,       // 0x01: Reset the command counter
+            CMD_CPU,            // 0x02: get the current cpu usage
             CMD_ERROR,          // 0x03: trace out the error log
             CMD_RESET_ALL,      // 0x04: reset all channels
             CMD_RESET_SYSTEM,   // 0x05: Do a hardware reset
@@ -94,8 +104,9 @@ namespace BTLights
         public enum FUNCTIONS
         {
             FUNC_FADE = LIM_LOW,    // lowest possible function value (will be send with value :)
-            FUNC_SAW,   // fade in no out
-            FUNC_SAW_REV,   // fade out  no in
+            FUNC_SAW,                // fade in no out
+            FUNC_SAW_REV,           // fade out  no in
+            NUM_OF_FUNC,             // Max number of functions
         }
         #endregion
 

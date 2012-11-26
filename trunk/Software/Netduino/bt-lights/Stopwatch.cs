@@ -140,7 +140,7 @@ namespace System.Diagnostics
             {
                 if (m_startTicks != 0)
                 {
-                    return (ElapsedHours * 60) + (ElapsedMinutes * 60) + ElapsedSeconds;
+                    return (ElapsedHours * 3600) + (ElapsedMinutes * 60) + ElapsedSeconds;
                 }
                 else
                 {

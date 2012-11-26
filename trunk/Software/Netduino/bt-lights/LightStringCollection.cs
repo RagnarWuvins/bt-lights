@@ -52,60 +52,77 @@ namespace BTLights
             int value = e.CommandValue;
             switch(mode)
             {
-                case (int)Constants.MODE.FUNC:
+                case (int)Constants.COMMAND.CMD_SET_MODE:
                 {
                     // block from other threads
                     lock (new object())
                     {
-                        SetChannelFunction(channel, (int)value);
+                        SetChannelMode(channel, (int)value);
                     }
                     break;
                 }
-                case (int)Constants.MODE.CMD_GET_VAL:
+                case (int)Constants.COMMAND.CMD_GET_MODE:
                 {
-                    if (value == 0)
-                    {
-                        GetChannelValue(channel);
-                    }
-                    else
-                    {
-                        GetChannelMode(channel);
-                    }
+                    GetChannelMode(channel);
                     break;
                 }
-
-                case (int)Constants.MODE.CMD_SET_VAL:
+                case (int)Constants.COMMAND.CMD_SET_VAL:
                 {
                     SetChannelValue(channel, (int)value, true);
                     break;
                 }
-                case (int)Constants.MODE.CMD_SET_MIN:
+                case (int)Constants.COMMAND.CMD_GET_VAL:
+                {
+                    GetChannelValue(channel);     
+                    break;
+                }                
+                case (int)Constants.COMMAND.CMD_SET_MIN:
                 {
                     SetChannelLimits(channel, (int)value, true);
                     break;
                 }
-                case (int)Constants.MODE.CMD_SET_MAX:
+                case (int)Constants.COMMAND.CMD_GET_MIN:
+                {
+                    GetChannelLimits(channel, true);
+                    break;
+                }
+                case (int)Constants.COMMAND.CMD_SET_MAX:
                 {
                     SetChannelLimits(channel, (int)value, false);
                     break;
                 }
-                case (int)Constants.MODE.CMD_SET_DELAY:
+                case (int)Constants.COMMAND.CMD_GET_MAX:
+                {
+                    GetChannelLimits(channel, false);
+                    break;
+                }
+                case (int)Constants.COMMAND.CMD_SET_DELAY:
                 {
                     SetChannelDelay(channel, (int)value);
                     break;
                 }
-                case (int)Constants.MODE.CMD_SET_PERIOD:
+                case (int)Constants.COMMAND.CMD_GET_DELAY:
+                {
+                    GetChannelDelay(channel);
+                    break;
+                }
+                case (int)Constants.COMMAND.CMD_SET_PERIOD:
                 {
                     SetChannelPeriod(channel, (int)value);
                     break;
                 }
-                case (int)Constants.MODE.CMD_SET_RISE:
-                case (int)Constants.MODE.CMD_SET_OFFSET:
+                case (int)Constants.COMMAND.CMD_GET_PERIOD:
+                {
+                    GetChannelPeriod(channel);
+                    break;
+                }
+                case (int)Constants.COMMAND.CMD_SET_RISE:
+                case (int)Constants.COMMAND.CMD_SET_OFFSET:
                 {
                     SetChannelCurve(channel, (int)value, (int)mode);
                     break;             
                 }
-                case (int)Constants.MODE.CMD_RESTART:
+                case (int)Constants.COMMAND.CMD_RESTART:
                 {
                     // block from other threads
                     lock(new object())
@@ -116,25 +133,14 @@ namespace BTLights
                 }
                 default:
                 {
-                    SetChannelMode(channel, (int)mode);
-                    SetChannelValue(channel, (int)value); 
                     break;
                 }
             }
         }
 
-        public void SetChannelFunction(int channel, int value)
-        {
-            for (int i = 0; i < _numberOfChannels; i++)
-            {
-                if (((channel >> i) & 0x1) == 1)
-                {
-                    channels[i].functionIndex = value;
-                    channels[i].mode = (int)Constants.MODE.FUNC;
-                }
-            }
-        }
-
+        /// <summary>
+        /// Reset the channel to it's default settings
+        /// </summary>
         public void Invoke()
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -143,6 +149,32 @@ namespace BTLights
             }
         }
 
+        /// <summary>
+        /// Set the channels value. If the setDimState flag is given, it will influnce the "realtime" behaviour.
+        /// Otherwise it is good for setting the function number for example
+        /// </summary>
+        /// <param name="channel">Channel number</param>
+        /// <param name="value">Value to be set</param>
+        /// <param name="setDimState">Activate the value directly</param>
+        public void SetChannelValue(int channel, int value, bool setDimState = false)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    //channels[i].Value = value;
+                    if (setDimState)
+                    {
+                            channels[i].dimState = value;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the cahnnels value. Will be send out by bluetooth
+        /// </summary>
+        /// <param name="channel">Channel number</param>
         public void GetChannelValue(int channel)
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -151,15 +183,64 @@ namespace BTLights
                 {
                     BTEventArgs e = new BTEventArgs();
                     e.CommandAddress = (int)(0x1 << i);
-                    e.CommandMode = (int)Constants.MODE.CMD_GET_VAL;
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_VAL;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.MODE.CMD_GET_VAL) + channels[i].Value;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_VAL) + channels[i].Value;
                     e.CommandValue = channels[i].Value;
                     SendChannelData(this, e);
                 }
             }
         }
 
+        /// <summary>
+        /// Sets the rise and fall behaviour of the channel
+        /// </summary>
+        /// <param name="channel">Channel number</param>
+        /// <param name="value">Value to be set</param>
+        /// <param name="mode">Mode of set indicator. can be Constants.COMMAND.CMD_SET_RISE or Constants.COMMAND.CMD_SET_OFFSET</param>
+        public void SetChannelCurve(int channel, int value, int mode)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    if (mode == (int)Constants.COMMAND.CMD_SET_RISE)
+                    {
+                        channels[i].rise = value;
+                    }
+                    else if (mode == (int)Constants.COMMAND.CMD_SET_OFFSET)
+                    {
+                        channels[i].offset = value;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Sets the channels current mode from the Constants.MODE struct
+        /// </summary>
+        /// <param name="channel">Channel number</param>
+        /// <param name="mode">Mode from the Constants.MODE struct</param>
+        public void SetChannelMode(int channel, int mode)
+        {
+            if (mode >= (int)Constants.MODE.NUM_OF_MODES)
+            {
+                Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_MODE_POINTER);
+                mode = (int)Constants.MODE.NOOP;
+            }
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    channels[i].mode = mode;
+                }
+            }            
+        }
+
+        /// <summary>
+        /// Gets the current mode the channel is in
+        /// </summary>
+        /// <param name="channel">Channel number</param>
         public void GetChannelMode(int channel)
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -168,57 +249,13 @@ namespace BTLights
                 {
                     BTEventArgs e = new BTEventArgs();
                     e.CommandAddress = (int)(0x1 << i);
-                    e.CommandMode = (int)Constants.MODE.CMD_GET_VAL;
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_MODE;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.MODE.CMD_GET_VAL) + channels[i].mode;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_MODE) + channels[i].mode;
                     e.CommandValue = channels[i].mode;
                     SendChannelData(this, e);
                 }
             }
-        }
-
-        public void SetChannelCurve(int channel, int value, int mode)
-        {
-            for (int i = 0; i < _numberOfChannels; i++)
-            {
-                if (((channel >> i) & 0x1) == 1)
-                {
-                    if (mode == (int)Constants.MODE.CMD_SET_RISE)
-                    {
-                        channels[i].rise = value;
-                    }
-                    else if (mode == (int)Constants.MODE.CMD_SET_OFFSET)
-                    {
-                        channels[i].offset = value;
-                    }
-                }
-            }
-        }
-
-        public void SetChannelValue(int channel, int value, bool setDimState = false)
-        {
-            for (int i = 0; i < _numberOfChannels; i++)
-            {
-                if (((channel >> i) & 0x1) == 1)
-                {
-                    channels[i].Value = value;
-                    if (setDimState)
-                    {
-                        channels[i].dimState = value;
-                    }
-                }
-            }
-        }
-
-        public void SetChannelMode(int channel, int mode)
-        {
-            for (int i = 0; i < _numberOfChannels; i++)
-            {
-                if (((channel >> i) & 0x1) == 1)
-                {
-                    channels[i].mode = mode;
-                }
-            }            
         }
 
         public void SetChannelLimits(int channel, int limit, bool lower)
@@ -239,6 +276,30 @@ namespace BTLights
             }
         }
 
+        public void GetChannelLimits(int channel, bool lower)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                int mode = (int)Constants.COMMAND.CMD_GET_MAX;
+                int modeValue = channels[i].upperLimit;
+                if (lower)
+                {
+                    mode = (int)Constants.COMMAND.CMD_GET_MIN;
+                    modeValue = channels[i].lowerLimit;
+                }
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = mode;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | mode) + channels[i].mode;
+                    e.CommandValue = modeValue;
+                    SendChannelData(this, e);
+                }
+            }
+        }
+
         public void SetChannelDelay(int channel, int delay)
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -247,6 +308,23 @@ namespace BTLights
                 {
                     channels[i].timerDelay = delay;
                     channelTimers[i].Change(channels[i].timerDelay, channels[i].timerPeriod);
+                }
+            }
+        }
+
+        public void GetChannelDelay(int channel)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_DELAY;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_DELAY) + channels[i].mode;
+                    e.CommandValue = channels[i].timerDelay;
+                    SendChannelData(this, e);
                 }
             }
         }
@@ -263,6 +341,23 @@ namespace BTLights
             }
         }
 
+        public void GetChannelPeriod(int channel)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_PERIOD;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_PERIOD) + channels[i].mode;
+                    e.CommandValue = channels[i].timerPeriod;
+                    SendChannelData(this, e);
+                }
+            }
+        }
+
         public void RestartChannelTimer(int channel)
         {
             for (int i = 0; i < _numberOfChannels; i++)
@@ -271,29 +366,6 @@ namespace BTLights
                 {
                     channels[i].dimState = 0;
                 }
-            }
-        }
-        public void AllOff()
-        {
-            for (int ch = 0; ch < channels.Length; ch++)
-            {
-                channels[ch].mode = 2;
-            }
-        }
-
-        public void AllOn()
-        {
-            for (int ch = 0; ch < channels.Length; ch++)
-            {
-                channels[ch].mode = 1;
-            }
-        }
-
-        public void AllFade()
-        {
-            for (int ch = 0; ch < channels.Length; ch++)
-            {
-                channels[ch].mode = 3;
             }
         }
     }

@@ -145,6 +145,7 @@ namespace BTLights
                             break;
                         default:
                             Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
+                            functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;             
                             break;
                     }
                     break;

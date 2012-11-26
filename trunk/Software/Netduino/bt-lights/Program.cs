@@ -25,7 +25,7 @@ namespace BTLights
         public static bool _ledState = false;
         public struct Errorlog
         {
-            public int[] log;
+            public long[] log;
             public int logIndex;
         }
         public static Errorlog errorlog;    // error log for storing firmware errors
@@ -44,7 +44,7 @@ namespace BTLights
             // Create a new error log. Since the Netduino has no EEPROM this is a RAM solution :/
             errorlog = new Errorlog();
             errorlog.logIndex = 0;
-            errorlog.log = new int[Constants.ERROR_LOG_LENGTH];
+            errorlog.log = new long[Constants.ERROR_LOG_LENGTH];
             // Setup the SPI interface. I guttenberged these settings from some tutorial and got the correct values by try and error.
             // Afterwards I found out they were documented in the MAX6966 documentation :/
             _MAX = new SPI.Configuration(
@@ -139,44 +139,49 @@ namespace BTLights
         public static void GlobalCommandHandler(object sender, BTEventArgs e)
         {
             int channel = e.CommandAddress;
-            int mode = e.CommandMode;
-            switch (mode)
+            byte[] data = new byte[5];
+            _BT.send2BT(data);
+            switch (e.CommandMode)
             {
-                case (int)Constants.COMMANDS.CMD_GC_GET_CC:
-                    _BT.send2BT(CommandHandler.CommandCounter);
+                case (int)Constants.GLOBAL_COMMAND.CMD_GET_CC:
+                    data = new byte[Constants.C_LENGTH - 2];
+                    data[0] = (((int)Constants.CLASS.GC_CMD << 4) | (int)Constants.GLOBAL_COMMAND.CMD_GET_CC);
+                    data[3] = (byte)CommandHandler.CommandCounter;
+                    data[4] = (byte)(data[0] + data[3]);
+                    _BT.send2BT(data);
                     break;
-                case (int)Constants.COMMANDS.CMD_GC_RESET_CC:
+                case (int)Constants.GLOBAL_COMMAND.CMD_RESET_CC:
                     CommandHandler.CommandCounter = 0;
                     break;
-                case (int)Constants.COMMANDS.CMD_GC_CPU:
+                case (int)Constants.GLOBAL_COMMAND.CMD_CPU:
                     _BT.send2BT((int)sysClock.TotalTime);
                     break;
-                case (int)Constants.COMMANDS.CMD_RESET_ALL:
+                case (int)Constants.GLOBAL_COMMAND.CMD_RESET_ALL:
                     channels.Invoke();
                     break;
-                case (int)Constants.COMMANDS.CMD_RESET_SYSTEM:
+                case (int)Constants.GLOBAL_COMMAND.CMD_RESET_SYSTEM:
                     lock (new object())
                     {
                         PowerState.RebootDevice(false);
                     }
                     break;
-                case (int)Constants.COMMANDS.CMD_ERROR:
+                case (int)Constants.GLOBAL_COMMAND.CMD_ERROR:
                     for (int i = 0; i < errorlog.logIndex; i++)
                     {
                         _BT.send2BT(errorlog.log[i]);
                     }
                     break;
-                case (int)Constants.COMMANDS.CMD_GET_SYS_TIME:
+                case (int)Constants.GLOBAL_COMMAND.CMD_GET_SYS_TIME:
                     _BT.send2BT((long)sysClock.TotalTime);                    
                     break;
-                case(int)Constants.COMMANDS.CMD_GET_VERSION:
-                    byte[] data = new byte[Constants.C_LENGTH - 2];
-                    data[0] = (((int)Constants.CLASS.GC_CMD << 4) | (int)Constants.COMMANDS.CMD_GET_VERSION);
+                case(int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION:
+                    data = new byte[Constants.C_LENGTH - 2];
+                    data[0] = (((int)Constants.CLASS.GC_CMD << 4) | (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION);
                     data[3] = (HW_VERSION << 4) | (HW_BUILD);
                     data[4] = (byte)(data[0] + data[3]);
                     _BT.send2BT(data);
                     break;
-                case(int)Constants.COMMANDS.CMD_RESET_BT:
+                case(int)Constants.GLOBAL_COMMAND.CMD_RESET_BT:
                     _BT.Reset();
                     break;
                 default:
@@ -191,7 +196,8 @@ namespace BTLights
         public static void THROW_ERROR(object error, String addOutput = "")
         {
 
-            int temp = ((int)error << 24) | (((int)sysClock.TotalTime) & 0x00FFFFFF);            
+            long errorHeader = (((long)Constants.CLASS.GC_CMD << 4) | (long)Constants.GLOBAL_COMMAND.CMD_ERROR) << 32;
+            long temp = errorHeader | ((long)(int)error << 24) | (((long)sysClock.TotalTime) & 0x00FFFFFFL);            
             errorlog.log[errorlog.logIndex] = temp;
             if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH - 1)
             {
@@ -201,7 +207,7 @@ namespace BTLights
             {
                 errorlog.logIndex = 0;
             }
-            string errorString = "THROW_ERROR: FW ERROR OCCURRED: " + (int)error + addOutput + " Time: " + sysClock.TotalTime + "Uint Time: " + (((int)sysClock.TotalTime) & 0x00FFFFFF);
+            string errorString = "THROW_ERROR: FW ERROR OCCURRED: " + (int)error + addOutput + " Time: " + sysClock.TotalTime;
             Debug.Print(errorString);
             _ledState = !_ledState;
             _LED.Write(_ledState);
