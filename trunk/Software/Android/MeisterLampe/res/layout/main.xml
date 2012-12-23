@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+    android:layout_width="fill_parent"
     android:layout_height="match_parent" >
 
     <LinearLayout
         android:id="@+id/LinearLayout1"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical" >
 
         <Button
@@ -34,20 +34,20 @@
             android:text="@string/main_xyTab" />
 
         <Button
+            android:id="@+id/main_readout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:onClick="readout_callback"
+            android:text="@string/main_readout" />
+        
+        <Button
             android:id="@+id/main_quit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
             android:onClick="quit_callback"
             android:text="@string/main_quit" />
-
-        <SeekBar
-            android:id="@+id/valuebar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:max="250" />
 
         <TextView
             android:id="@+id/outputText"
@@ -57,11 +57,15 @@
             android:text="@string/app_name"
             android:textAppearance="?android:attr/textAppearanceMedium" />
 
-        <ListView
-            android:id="@+id/outputList"
-            android:layout_width="match_parent"
-            android:layout_height="fill_parent" >
-        </ListView>
+        <TableLayout
+            android:id="@+id/channelTable"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:stretchColumns="0,1"
+            >
+           
+        </TableLayout>
+
     </LinearLayout>
 
 </ScrollView>

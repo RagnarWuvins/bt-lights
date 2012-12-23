@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="Modes">
+        <item>No operation</item>
+        <item>Direct mode</item>
+        <item>Switched on</item>
+        <item>Switched off</item>
+        <item>Function</item>
+    </string-array>
+</resources>

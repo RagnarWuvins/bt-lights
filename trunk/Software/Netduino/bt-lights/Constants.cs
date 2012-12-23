@@ -24,8 +24,8 @@ namespace BTLights
         public static uint PWM_MAX = 20;
         public static int G_MAX_CHANNELS = G_SET_ADDRESS;   // number of channels
         public static int G_CHANNEL_ADR_MASK = 0xFFFF;   // mask for the address part
-        public static int C_LENGTH = 0x07; // Command length incl \n\r
-        public static int BAUDRATE = 38400; // Global baudrate (default: 38400)
+        public static int C_LENGTH = 0x08; // Command length incl \n\r
+        public static int BAUDRATE = 115200; // Default baudrate MCU -> BT (default: 19200)
         public static int ERROR_LOG_LENGTH = 256; // Length of error log
         public static int MAX_CHANNEL_DISSAPATION = 128; // value changes should not exceed this limit
         public static int BT_TIMEOUT = 300000;    // time before bluetooth module resets (5 minutes)
@@ -47,6 +47,7 @@ namespace BTLights
             BUFFER_INDEX_OUT_RANGE, // 0x07: The buffer write or read pointer are out of range
             TYPE_CAST_FAILED,       // 0x08: While casting from byte to another type the system encountered an error
             WRONG_MODE_POINTER,     // 0x09: Wrong mode set. Will be set to NOOP instead
+            CHANNEL_CMD_UNKNOWN,    // 0x0A: This is an unhandled channel or global command
         };
 
         public enum CLASS
@@ -57,16 +58,7 @@ namespace BTLights
             DP_CMD,     // direct port command
             CMD_NUM,    // total number of commands
         };
-
-        public enum MODE
-        {
-            NOOP, 	        // no change of current mode
-            DIRECT,	        // Use channel value
-            ON,             // On value
-            OFF,            // Off value
-            FUNC,	        // set Function
-            NUM_OF_MODES,   // Number of modes
-        }
+        
         public enum COMMAND
         {
             CMD_SET_MODE,   // 0x00: Set the channel mode
@@ -82,8 +74,10 @@ namespace BTLights
             CMD_SET_PERIOD, // 0x0A: Set the timer period
             CMD_GET_PERIOD, // 0x0B: Get the timer period
             CMD_SET_RISE,   // 0x0C: Set rise modifier
-            CMD_SET_OFFSET, // 0x0D: Set offset modifier
-            CMD_RESTART,    // 0x0E: Reset the channel timer     
+            CMD_GET_RISE,   // 0x0D: Get rise modifier
+            CMD_SET_OFFSET, // 0x0E: Set offset modifier
+            CMD_GET_OFFSET, // 0x0F: Set offset modifier
+            CMD_RESTART,    // 0x10: Reset the channel timer     
             CMD_NUM,        // Number of commands must be end of enum
         }
 
@@ -98,8 +92,19 @@ namespace BTLights
             CMD_GET_SYS_TIME,   // 0x06: Get the time on the board
             CMD_GET_VERSION,    // 0x07: Get the hardware version
             CMD_RESET_BT,       // 0x08: Reset the BT module only
+            CMD_GET_CMD_TIME,   // 0x09: Get Command processing time
             CMD_NUM,            // Number of commands must be end of enum
         };
+
+        public enum MODE
+        {
+            NOOP, 	        // no change of current mode
+            DIRECT,	        // Use channel value
+            ON,             // On value
+            OFF,            // Off value
+            FUNC,	        // set Function
+            NUM_OF_MODES,   // Number of modes
+        }
 
         public enum FUNCTIONS
         {
@@ -110,56 +115,14 @@ namespace BTLights
         }
         #endregion
 
-        /// <summary>
-        /// Bluetooth module definition block. Contains all needed constants and support functions
-        /// </summary>
-        #region Bluetooth module definition block
-        public static string[] BT_INIT_SLOW = {
-            "at+class=820118", 
-            //"at+class=240404",
-            "at+role=0",
-            "at+name=Meister Lampe",
-            "at+uart=38400,0,0",
-            "at+inqm=1,9,48",
-            "at+rmaad",
-            "at+adcn?",
-            "at+state?"    // current state of BT module
-                                        };
-        public static string[] BT_INIT_FAST = {
-            "at+version?",  // get version         
-            "at+class=820118", //"at+class=240404",
-            "at+role=0",
-            "at+name=Meister Lampe",
-            "at+uart=" + Constants.BAUDRATE + ",0,0",
-            "at+inqm=1,9,48",
-            "at+uart?",
-            "at+state?"    // current state of BT module
-                                        };
-
+        #region BTM222 Constants
         public static string[] BT_INIT_BTM222 = {
             "ATN=Meister Lampe",
+            "ATL?",
+            "ATL5",
             "ATE0"
                                                 };
 
-
-        public static string[] BT_RESET = {
-            "at+orgl",
-            };
-        public static string[] BT_BAUD1 = {
-            "at+uart=9600,0,0",
-            "at+uart?"
-            };
-        public static string[] BT_BAUD2 = {
-            "at+uart=38400,0,0",
-            "at+uart?"
-            };
-        public static string[] BT_BAUD3 = {
-            "at+uart=115200,0,0",
-            "at+uart?"
-            };
-        public static string[] BT_TEST = {
-            "at+uart?"
-            };
         #endregion
         /// <summary>
         /// MAX6966 definition block. Contains all needed constants and support functions

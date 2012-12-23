@@ -68,7 +68,7 @@ namespace BTLights
                 }
                 case (int)Constants.COMMAND.CMD_SET_VAL:
                 {
-                    SetChannelValue(channel, (int)value, true);
+                    SetChannelValue(channel, (int)value);
                     break;
                 }
                 case (int)Constants.COMMAND.CMD_GET_VAL:
@@ -122,6 +122,16 @@ namespace BTLights
                     SetChannelCurve(channel, (int)value, (int)mode);
                     break;             
                 }
+                case (int)Constants.COMMAND.CMD_GET_RISE:
+                {
+                    GetChannelRise(channel, (int)value, (int)mode);
+                    break;
+                }
+                case (int)Constants.COMMAND.CMD_GET_OFFSET:
+                {
+                    GetChannelOffset(channel, (int)value, (int)mode);
+                    break;
+                }
                 case (int)Constants.COMMAND.CMD_RESTART:
                 {
                     // block from other threads
@@ -133,6 +143,7 @@ namespace BTLights
                 }
                 default:
                 {
+                    Program.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_CMD_UNKNOWN, "Channel command unknown");
                     break;
                 }
             }
@@ -156,16 +167,20 @@ namespace BTLights
         /// <param name="channel">Channel number</param>
         /// <param name="value">Value to be set</param>
         /// <param name="setDimState">Activate the value directly</param>
-        public void SetChannelValue(int channel, int value, bool setDimState = false)
+        public void SetChannelValue(int channel, int value)
         {
             for (int i = 0; i < _numberOfChannels; i++)
             {
                 if (((channel >> i) & 0x1) == 1)
                 {
-                    //channels[i].Value = value;
-                    if (setDimState)
+                    //
+                    if (channels[i].mode == (int)Constants.MODE.FUNC)
                     {
-                            channels[i].dimState = value;
+                        channels[i].dimState = value;
+                    }
+                    else
+                    {
+                        channels[i].Value = value;
                     }
                 }
             }
@@ -185,7 +200,7 @@ namespace BTLights
                     e.CommandAddress = (int)(0x1 << i);
                     e.CommandMode = (int)Constants.COMMAND.CMD_GET_VAL;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_VAL) + channels[i].Value;
+                    e.CommandChecksum = (int)Constants.CLASS.CC_CMD  + channels[i].Value;
                     e.CommandValue = channels[i].Value;
                     SendChannelData(this, e);
                 }
@@ -215,7 +230,52 @@ namespace BTLights
                 }
             }
         }
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <param name="value"></param>
+        /// <param name="mode"></param>
+        public void GetChannelRise(int channel, int value, int mode)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_RISE;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(uint)Constants.CLASS.CC_CMD + (int)channels[i].rise;
+                    e.CommandValue = (int)channels[i].rise;
+                    SendChannelData(this, e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="channel"></param>
+        /// <param name="value"></param>
+        /// <param name="mode"></param>
+        public void GetChannelOffset(int channel, int value, int mode)
+        {
+            for (int i = 0; i < _numberOfChannels; i++)
+            {
+                if (((channel >> i) & 0x1) == 1)
+                {
+                    BTEventArgs e = new BTEventArgs();
+                    e.CommandAddress = (int)(0x1 << i);
+                    e.CommandMode = (int)Constants.COMMAND.CMD_GET_OFFSET;
+                    e.CommandClass = (int)Constants.CLASS.CC_CMD;
+                    e.CommandChecksum = (int)(uint)Constants.CLASS.CC_CMD + (int)channels[i].offset;
+                    e.CommandValue = (int)channels[i].offset;
+                    SendChannelData(this, e);
+                }
+            }
+        }
         /// <summary>
         /// Sets the channels current mode from the Constants.MODE struct
         /// </summary>
@@ -251,7 +311,7 @@ namespace BTLights
                     e.CommandAddress = (int)(0x1 << i);
                     e.CommandMode = (int)Constants.COMMAND.CMD_GET_MODE;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_MODE) + channels[i].mode;
+                    e.CommandChecksum = (int)(uint)Constants.CLASS.CC_CMD + channels[i].mode;
                     e.CommandValue = channels[i].mode;
                     SendChannelData(this, e);
                 }
@@ -293,7 +353,7 @@ namespace BTLights
                     e.CommandAddress = (int)(0x1 << i);
                     e.CommandMode = mode;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | mode) + channels[i].mode;
+                    e.CommandChecksum = (int)Constants.CLASS.CC_CMD + modeValue;
                     e.CommandValue = modeValue;
                     SendChannelData(this, e);
                 }
@@ -322,7 +382,7 @@ namespace BTLights
                     e.CommandAddress = (int)(0x1 << i);
                     e.CommandMode = (int)Constants.COMMAND.CMD_GET_DELAY;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_DELAY) + channels[i].mode;
+                    e.CommandChecksum = (int)Constants.CLASS.CC_CMD + channels[i].timerDelay;
                     e.CommandValue = channels[i].timerDelay;
                     SendChannelData(this, e);
                 }
@@ -351,7 +411,7 @@ namespace BTLights
                     e.CommandAddress = (int)(0x1 << i);
                     e.CommandMode = (int)Constants.COMMAND.CMD_GET_PERIOD;
                     e.CommandClass = (int)Constants.CLASS.CC_CMD;
-                    e.CommandChecksum = (int)(((uint)Constants.CLASS.CC_CMD << 4) | Constants.COMMAND.CMD_GET_PERIOD) + channels[i].mode;
+                    e.CommandChecksum = (int)Constants.CLASS.CC_CMD + channels[i].timerPeriod;
                     e.CommandValue = channels[i].timerPeriod;
                     SendChannelData(this, e);
                 }

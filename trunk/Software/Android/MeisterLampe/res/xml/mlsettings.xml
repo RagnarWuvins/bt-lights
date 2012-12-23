@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <EditTextPreference
+        android:key="The name"
+        android:summary="Your name:"
+        android:title="Name" />
+
+    <CheckBoxPreference
+        android:defaultValue="1"
+        android:title="Connect in startup" 
+        android:key="connect_at_startup" />
+    
+    <ListPreference
+        android:entries="@array/list"
+        android:entryValues="@array/values"
+        android:key="num_of_channels"
+        android:summary="The number of channels"
+        android:title="Channels" 
+        />
+<ListPreference
+    android:title="Default device"
+    android:key="default_device"
+    />
+
+</PreferenceScreen>

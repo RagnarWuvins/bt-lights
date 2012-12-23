@@ -39,5 +39,15 @@ namespace BTLights
             }            
             return output;
         }
+
+        public static char[] ByteToChar(byte[] bytes)
+        {
+            char[] chars2 = new char[bytes.Length];
+            for (int i = 0; i < chars2.Length; i++) 
+            {
+               chars2[i] = (char) (bytes[i]);
+            }
+            return chars2;
+        }
     }
 }

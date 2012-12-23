@@ -19,8 +19,8 @@ namespace BluetoothLights
         private static string[] _toolButtonDesc = {"Plot channel values", "Generate XML for Android", "Clear output"};
 
         private CheckBox[] _checkBoxes = new CheckBox[Constants.G_MAX_CHANNELS];
-        private Button[] _cmdButtons = new Button[(int)Constants.MODE.CMD_NUM];
-        private Button[] _gCmdButtons = new Button[(int)Constants.COMMANDS.CMD_NUM];
+        private Button[] _cmdButtons = new Button[(int)Constants.COMMAND.CMD_NUM];
+        private Button[] _gCmdButtons = new Button[(int)Constants.GLOBAL_COMMAND.CMD_NUM];
         private TrackBar _valueBar = new TrackBar();
         private NumericUpDown _textBox = new NumericUpDown();
         private static TextBox _output = new TextBox();        
@@ -34,11 +34,11 @@ namespace BluetoothLights
         private static int _elementNum = 0;
         private static int _outputHeight = 100;
 
-        private static int[] _allElements = {Constants.G_MAX_CHANNELS, (int)Constants.MODE.CMD_NUM, (int)Constants.COMMANDS.CMD_NUM};
+        private static int[] _allElements = {Constants.G_MAX_CHANNELS, (int)Constants.COMMAND.CMD_NUM, (int)Constants.GLOBAL_COMMAND.CMD_NUM};
         private static int _sliderYPos = functions.GetMax(_allElements);
         private static int _sliderWidth = 2 * _margin + 2 * _bWidth + _cbWidth;        
         private static int _width = _sliderWidth + 4 * _margin;
-        private static int _height = 600;
+        private static int _height = 700;
 
         private static int _cla = 0;
         private static int _mode = 0;        
@@ -55,6 +55,7 @@ namespace BluetoothLights
             {
                 try
                 {
+                    _srl.Close();
                     _srl.Open();
                 }
                 catch
@@ -81,7 +82,7 @@ namespace BluetoothLights
                 _elementNum++;
             }
 
-            string[] CommandTexts = Enum.GetNames(typeof(Constants.MODE));
+            string[] CommandTexts = Enum.GetNames(typeof(Constants.COMMAND));
             for (int buttonCounter = 0; buttonCounter < _cmdButtons.Length; buttonCounter++)
             {                
 
@@ -98,7 +99,7 @@ namespace BluetoothLights
                 _elementNum++;
             }
 
-            string[] gCommandTexts = Enum.GetNames(typeof(Constants.COMMANDS));
+            string[] gCommandTexts = Enum.GetNames(typeof(Constants.GLOBAL_COMMAND));
             for (int buttonCounter = 0; buttonCounter < _gCmdButtons.Length; buttonCounter++)
             {
 
@@ -199,7 +200,7 @@ namespace BluetoothLights
             Button bt = (Button)sender;
             debugOut(bt.Text);
             _mode = _string2enum(bt.Text);
-            _cla = 0;
+            _cla = (int)Constants.CLASS.CC_CMD;
             debugOut(_mode);
             _sendData();
         }
@@ -208,7 +209,7 @@ namespace BluetoothLights
         {
             Button bt = (Button)sender;
             _mode = _string2enum(bt.Text);
-            _cla = 1;
+            _cla = (int)Constants.CLASS.GC_CMD;
             entryCounter = 0;
             _sendData();
         }
@@ -249,7 +250,7 @@ namespace BluetoothLights
                 return;
             }
             SerialPort srl = (SerialPort)sender;
-            if (srl.BytesToRead < 7)
+            if (srl.BytesToRead < Constants.C_LENGTH)
             {
                 return;
             }
@@ -258,14 +259,14 @@ namespace BluetoothLights
             {
                     // these are the channel commands
                 case (int)Constants.CLASS.CC_CMD:
-                    byte[] currentBuffer = new Byte[7];
-                    srl.Read(currentBuffer, 0, 7);
-                    int cla = currentBuffer[0] >> 4;
-                    int mode = currentBuffer[0] & 0x00FF;
-                    int address = currentBuffer[1] << 8 | currentBuffer[2];
-                    int value = currentBuffer[3];
-                    int crc = currentBuffer[0] + currentBuffer[3];
-                    if (crc == currentBuffer[4] | (crc - 0x100) == currentBuffer[4])
+                    byte[] currentBuffer = new Byte[Constants.C_LENGTH];
+                    srl.Read(currentBuffer, 0, Constants.C_LENGTH);
+                    int cla = currentBuffer[0];
+                    int mode = currentBuffer[1];
+                    int address = currentBuffer[2] << 8 | currentBuffer[3];
+                    int value = currentBuffer[4];
+                    int crc = currentBuffer[0] + currentBuffer[4];
+                    if (crc == currentBuffer[5] | (crc - 0x100) == currentBuffer[5])
                     {
                         debugString = String.Format("Class:\t\t{0}\nMode:\t\t{1}\nAddress:\t0x{2:X4}\nValue:\t\t{3}\n\n", cla, mode, address, value);
                     }
@@ -279,14 +280,32 @@ namespace BluetoothLights
                 case (int)Constants.CLASS.GC_CMD:                    
                     while (srl.BytesToRead > 0)
                     {
+                        if (srl.BytesToRead < Constants.C_LENGTH)
+                        {
+                            continue;
+                        }
                         byte[] test = ASCIIEncoding.UTF8.GetBytes(srl.ReadLine());
+                        cla = test[0];
+                        mode = test[1];
+                        address = test[2] << 8 | test[3];
+                        value = test[4];
+                        crc = test[0] + test[4];
+                        if (!(crc == test[5] | (crc - 0x100) == test[5]))
+                        {
+                            debugString = "CRC Error!";
+                        }
+                        if (test.Length < Constants.C_LENGTH - 2)
+                        {
+                            //debugOut("End of log doesn't match line number",  true);
+                            continue;
+                        }
                         // if the command was firmware error tracing:
-                        if (_mode == (int)Constants.COMMANDS.CMD_ERROR)
+                        if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_ERROR)
                         {
                             uint sysTime = 0;
                             uint fwError = 0;
                             // stupig BitConverter uses revers endianism :/
-                            uint errorEntry = BitConverter.ToUInt32(new byte[] {test[4], test[3], test[2], test[1]}, 0);
+                            uint errorEntry = BitConverter.ToUInt32(new byte[] {test[5], test[4], test[3], test[2]}, 0);
                             sysTime = (errorEntry & 0x00FFFFFF);
                             fwError = (errorEntry & 0xFF000000) >> 24;
                             int min = (int)sysTime / 60;
@@ -301,6 +320,18 @@ namespace BluetoothLights
                             debugOut(String.Format(formatString, erDesc, hours, min, sec, entryCounter), true);
                             entryCounter++;
                         }
+                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CC)
+                        {
+                            debugOut(String.Format("Command Counter: {0}", value),false);
+                        }
+                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CMD_TIME)
+                        {
+                            debugOut(String.Format("Command Time: {0}", (test[3] << 16) | (test[4] << 8) | test[5]), false);
+                        }
+                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION)
+                        {
+                            debugOut(String.Format("Version: {0}.{1}", value >> 4, value & 0xF), false);
+                        }
                         else
                         {
                             int pos = 32;
@@ -310,7 +341,7 @@ namespace BluetoothLights
                                 result |= (by << pos);
                                 pos -= 8;
                             }
-                            debugOut(result.ToString() + "\n", true); 
+                            debugOut(result.ToString() + "\n", true);
                         }
                     }
                     break;
@@ -323,29 +354,30 @@ namespace BluetoothLights
 
         private static void _sendData()
         {
-            byte _modcla = (byte)(_cla << 4 | _mode);
+            byte _class = (byte)_cla;
+            byte _mod = (byte)_mode;            
             byte _address_higher = (byte)((_address & 0xFF00) >> 8);
             byte _adress_lower = (byte)(_address & 0x00FF);
-            byte _crc = (byte)(_modcla + _value);
+            byte _crc = (byte)(_cla + _value);
 
-            byte[] command = { _modcla, _address_higher, _adress_lower, (byte)_value, _crc, 0xD, 0xA };
+            byte[] command = { _class, _mod, _address_higher, _adress_lower, (byte)_value, _crc, 0xD, 0xA };
             _srl.Write(command, 0, command.Length);
         }
 
         private static int _string2enum(string text)
         {
             int output = 0;
-            if (Enum.IsDefined(typeof(Constants.MODE), text))
+            if (Enum.IsDefined(typeof(Constants.COMMAND), text))
             {
-                output = (int)Enum.Parse(typeof(Constants.MODE), text, true);
+                output = (int)Enum.Parse(typeof(Constants.COMMAND), text, true);
             }
-            else if(Enum.IsDefined(typeof(Constants.COMMANDS), text))
+            else if(Enum.IsDefined(typeof(Constants.GLOBAL_COMMAND), text))
             {
-                output = (int)Enum.Parse(typeof(Constants.COMMANDS), text, true);
+                output = (int)Enum.Parse(typeof(Constants.GLOBAL_COMMAND), text, true);
             }
             else
             {
-                MessageBox.Show("Not an enum!!!");
+                Console.Out.WriteLine(String.Format("{0} is not part of any command enum {1}", text));
             }
             return output;
         }
@@ -360,7 +392,7 @@ namespace BluetoothLights
             }
             else
             {
-                MessageBox.Show("Not part of this enum!!!");
+                Console.Out.WriteLine(String.Format("{0} is not part of this enum {1}", modeNum, enumType.ToString()));
             }
             return output;
         }

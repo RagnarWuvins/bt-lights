@@ -13,8 +13,9 @@ namespace BTLights
         public event BTEvent ChannelRequest, GlobalRequest, ExternalRequest;
         public static int CommandCounter = 0;
 
-        //|CLA |MOD |       ADR         |   VAL   |   CRC   | 
-        //|0001|0101|0000|0000|0000|0001|0000|0000|0000|0006|
+        //|   CLA   |    MOD  |       ADR         |   VAL   |   CRC   | 
+        //|0000|0001|0000|0101|0000|0000|0000|0001|0000|0000|0000|0001|
+        // CRC = CLA + VAL
 
         private byte[] mRawCommand;
         private byte mClass;
@@ -52,15 +53,15 @@ namespace BTLights
             BTEventArgs e = new BTEventArgs();
             if (mRawCommand.Length == Constants.C_LENGTH)
             {
-                this.mClass = (byte)(mRawCommand[0] >> 4);
-                this.mMode = (byte)(mRawCommand[0] & 0x0F);
-                this.mAddress = ((int)mRawCommand[1] << 8) | (int)mRawCommand[2];
+                this.mClass = (byte)(mRawCommand[0]);
+                this.mMode = (byte)(mRawCommand[1]);
+                this.mAddress = ((int)mRawCommand[2] << 8) | (int)mRawCommand[3];
                 this.mGlobalCommand = this.mAddress;
-                this.mValue = mRawCommand[3];
-                this.mChecksum = mRawCommand[0] + mRawCommand[3];
+                this.mValue = mRawCommand[4];
+                this.mChecksum = mRawCommand[0] + mRawCommand[4];
                 // check if the command comes from the BT board or user. Unfortunately the
                 // CRC can be bigger than a byte, that's why we add 0x100 for the checksum
-                mInternalCommand = (mRawCommand[4] == this.mChecksum || (mRawCommand[4] + 0x100) == this.mChecksum) ? true : false;
+                mInternalCommand = (mRawCommand[5] == this.mChecksum || (mRawCommand[5] + 0x100) == this.mChecksum) ? true : false;
             }
             if (!mInternalCommand)
             {

@@ -15,9 +15,21 @@
     <string name="menu_about">About</string>
     <string name="menu_error_log">Error Log</string>
     <string name="menu_bugreport">Bug report</string>
-    <string name="menu_reset">Reset Hardware</string>    
+    <string name="menu_reset">Reset Hardware</string>
     <string name="title_activity_error_log">Error log viewer</string>
     <string name="title_activity_mlcoord_view">Time Controller</string>
     <string name="tab_controller">Tab controller</string>
+    <string name="no_default_device_found">No default device found. Please use the menu to connect your device</string>
+    <string name="trying_to_connect">Trying to connect</string>
+    <string name="title_activity_mlsettings">Settings</string>
+    <string name="menu_reconnect">Reconnect</string>
+    <string name="sending_to_module_failed">Sending to module failed</string>
+    <string name="title_activity_mlchannel_setup">Single channel setup</string>
+    <string name="func_sweeping">Sweeping</string>
+    <string name="func_fading_in">Fading In</string>
+    <string name="func_fading_out">Fading Out</string>
+    <string name="getting_channel_values">Getting channel values</string>
+    <string name="channel_number">Channel number</string>
+    <string name="main_readout">Readout Lamp</string>
 
 </resources>

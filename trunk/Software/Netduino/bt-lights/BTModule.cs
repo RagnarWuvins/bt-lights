@@ -21,6 +21,10 @@ namespace BTLights
         private static int _writeIndex = 0, _readIndex = 0;
         private static byte[] _writeBuffer;
         private static int mCommandExtractCounter = 0; // must be 0 at all times
+        private Stopwatch btClock = Stopwatch.StartNew();
+        private long elapsedCommandTime = 0;
+        private bool clocklock = false;
+
         /// <summary>Event that is called when a command is received (Termination is \r\n or 0xA, 0xD)</summary>
         public event BTEvent CommandReceived;
 
@@ -82,7 +86,7 @@ namespace BTLights
         public void send2BT(string command)
         {
             Debug.Print("send2BT: OUT: Stringcommand: " + command);
-            _writeBuffer = Encoding.UTF8.GetBytes(command + "\r\n");
+            _writeBuffer = Encoding.UTF8.GetBytes(command + "\r");
             Write(_writeBuffer, 0, _writeBuffer.Length);
         }
 
@@ -153,7 +157,7 @@ namespace BTLights
             Array.Copy(command, s_command, command.Length);
             s_command[command.Length] = 0xD;
             s_command[command.Length + 1] = 0xA;
-            Debug.Print("send2BT: OUT: Address: " + (command[1] << 8 | command[2]) + " Value: " + command[3]);
+            Debug.Print("send2BT: OUT: Address: " + (command[2] << 8 | command[3]) + " Value: " + command[4]);
             Write(s_command, 0, s_command.Length);
         }
 
@@ -246,9 +250,19 @@ namespace BTLights
             }
         }
 
+        public long GetCommandProcessingTime()
+        {
+            return elapsedCommandTime;
+        }
+
         // This is the IRQ handler that signals the main routine that a command is there
         private void receiveBT(object sender, SerialDataReceivedEventArgs e)
         {
+            if (!clocklock)
+            {
+                btClock.Start();
+                clocklock = true;
+            }
             int curBufferLength = BytesToRead;
             //Debug.Print("RI:" + _readIndex + " | WI: " + _writeIndex);
             byte[] tempBuffer = new Byte[curBufferLength];
@@ -348,42 +362,49 @@ namespace BTLights
                 Debug.Print("ExtractCommand: Read index: " + readIndex + " Write index: " + writeIndex);
             }
             int dataInBufferLength = 0;
+            bool valid = false;
+            int index = 0;
             BTEventArgs e = new BTEventArgs();
+
             if (writeIndex < readIndex)
             {
-                for (int index = 0; index < writeIndex; index++)
+                for (index = 0; index < writeIndex; index++)
                 {
                     if (mReadBuffer[index] == 0x0A)
                     {
+                        
                         dataInBufferLength = (mReadBuffer.Length - readIndex) + index + 1;
                         Debug.Print("ExtractCommand: Roundtrip: 0x0A found with at: " + index + " with length: " + dataInBufferLength + " From: " + readIndex);
-                        e.CommandRaw = GetCommand(dataInBufferLength, index + 1);
-                        CommandReceived(this, e);
-                        if (index + dataInBufferLength < writeIndex)
-                        {
-                            startCommandReceive();
-                        }
+                        valid = true;
                         break;
                     }
                 }
             }
             else
             {
-                for (int index = readIndex; index < writeIndex; index++)
-                {
+                for (index = readIndex; index < writeIndex; index++)
+                {                    
                     if (mReadBuffer[index] == 0x0A)
                     {
                         dataInBufferLength = (index + 1) - readIndex;
                         Debug.Print("ExtractCommand: Regular: 0x0A found with length: " + dataInBufferLength + " From: " + readIndex);
-                        e.CommandRaw = GetCommand(dataInBufferLength, index + 1);
-                        CommandReceived(this, e);
-                        //TODO: dataInBufferLenght is not the right way to test?!
-                        if (dataInBufferLength < _writeIndex)
-                        {
-                            startCommandReceive();
-                        }
+                        valid = true;
                         break;
                     }
+                }
+            }
+            if (valid)
+            {
+                elapsedCommandTime = btClock.ElapsedMilliseconds;
+                btClock.Start();
+                clocklock = false;
+                Debug.Print("Time for last command: " + elapsedCommandTime + " ms");
+                // send event to who ever cares about it
+                e.CommandRaw = GetCommand(dataInBufferLength, index + 1);
+                CommandReceived(this, e);
+                if (index + dataInBufferLength < writeIndex)
+                {
+                    startCommandReceive();
                 }
             }
             mCommandExtractCounter--;

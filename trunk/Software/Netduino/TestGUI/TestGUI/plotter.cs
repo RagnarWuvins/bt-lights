@@ -28,7 +28,7 @@ namespace BluetoothLights
 
         private static DataSource _StackSrc = null;
         private int _StackIdx = 0;
-        private int _queryTime = 40;
+        private int _queryTime = 60;
         private int _queryBuffer = 256;
 
         private SerialPort _srl;
@@ -115,11 +115,11 @@ namespace BluetoothLights
         private void _srlDataReceived(object sender, EventArgs e)
         {
             SerialPort srl = (SerialPort)sender;
-            if (srl.BytesToRead < 7)
+            if (srl.BytesToRead < Constants.C_LENGTH)
             {
                 return;
             }
-            byte[] reply = new Byte[7];
+            byte[] reply = new Byte[Constants.C_LENGTH];
             srl.Read(reply, 0, reply.Length);
             
             if (_readIndex[_StackIdx] < _StackSrc.Length - 1)
@@ -134,14 +134,14 @@ namespace BluetoothLights
                     _StackSrc.Samples[i].y = 0;
                 }
             }
-            int crc = reply[0] + reply[3];
-            if (crc == reply[4] | (crc - 0x100) == reply[4])
+            int crc = reply[0] + reply[4];
+            if (crc == reply[5] | (crc - 0x100) == reply[5])
             {
                 _StackSrc.Samples[_readIndex[_StackIdx]].x = _readIndex[_StackIdx];
-                _StackSrc.Samples[_readIndex[_StackIdx]].y = reply[3];
+                _StackSrc.Samples[_readIndex[_StackIdx]].y = reply[4];
                 
             }
-            else if ((reply[1] << 8 | reply[2]) != _address)
+            else if ((reply[2] << 8 | reply[3]) != _address)
             {
                 Console.WriteLine("Wrong channel returned");
             }
@@ -161,12 +161,13 @@ namespace BluetoothLights
 
         private void _sendData()
         {
-            byte _modcla = (byte)((uint)Constants.CLASS.CC_CMD << 4 | Constants.MODE.CMD_GET_VAL);
+            byte _mod = (byte)Constants.COMMAND.CMD_GET_VAL;
+            byte _cla = (byte)Constants.CLASS.CC_CMD;
             byte _address_higher = (byte)((_address & 0xFF00) >> 8);
             byte _adress_lower = (byte)(_address & 0x00FF);
-            byte _crc = (byte)(_modcla + 0x00);
+            byte _crc = (byte)(_cla + 0x00);
 
-            byte[] command = { _modcla, _address_higher, _adress_lower, 0x00, _crc, 0xD, 0xA };
+            byte[] command = { _cla, _mod, _address_higher, _adress_lower, 0x00, _crc, 0xD, 0xA };
             this._srl.Write(command, 0, command.Length);
         }
 

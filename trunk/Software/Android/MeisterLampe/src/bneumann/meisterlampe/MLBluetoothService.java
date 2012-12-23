@@ -16,15 +16,19 @@
 
 package bneumann.meisterlampe;
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.UUID;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -52,12 +56,14 @@ public class MLBluetoothService
 
 	// Member fields
 	private final BluetoothAdapter mAdapter;
-	private final Handler mHandler;
+	private static ArrayList<Handler> mHandler;
 	private AcceptThread mSecureAcceptThread;
 	private AcceptThread mInsecureAcceptThread;
 	private ConnectThread mConnectThread;
 	private ConnectedThread mConnectedThread;
 	private int mState;
+	private byte[] mReadBuffer;
+	private Context mContext;
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
@@ -68,6 +74,8 @@ public class MLBluetoothService
 	public static final int STATE_CONNECTED = 3; // now connected to a remote
 													// device
 
+	private static final int COMMAND_TIME = 15; // pause between commands
+	
 	/**
 	 * Constructor. Prepares a new BluetoothChat session.
 	 * 
@@ -80,7 +88,10 @@ public class MLBluetoothService
 	{
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
-		mHandler = handler;
+		mHandler = new ArrayList<Handler>();
+		mHandler.add(handler);
+		mReadBuffer = new byte[7];
+		mContext = context;
 	}
 
 	/**
@@ -96,9 +107,18 @@ public class MLBluetoothService
 		mState = state;
 
 		// Give the new state to the Handler so the UI Activity can update
-		mHandler.obtainMessage(MLStartupActivity.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+		sendMessages(MLStartupActivity.MESSAGE_STATE_CHANGE, state, -1, null);
 	}
 
+	private void sendMessages(int what, int arg1, int arg2, Object obj)
+	{
+		Iterator<Handler> it = mHandler.iterator();
+		while (it.hasNext())
+		{
+			it.next().obtainMessage(what, arg1, arg2, obj).sendToTarget();
+		}
+	}
+	
 	/**
 	 * Return the current connection state.
 	 */
@@ -224,14 +244,7 @@ public class MLBluetoothService
 		// Start the thread to manage the connection and perform transmissions
 		mConnectedThread = new ConnectedThread(socket, socketType);
 		mConnectedThread.start();
-
-		// Send the name of the connected device back to the UI Activity
-		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_DEVICE_NAME);
-		Bundle bundle = new Bundle();
-		bundle.putString(MLStartupActivity.DEVICE_NAME, device.getName());
-		msg.setData(bundle);
-		mHandler.sendMessage(msg);
-
+		
 		setState(STATE_CONNECTED);
 	}
 	
@@ -291,17 +304,65 @@ public class MLBluetoothService
 		r.write(out);
 	}
 
+	
+	/**
+	 * Sends a message.
+	 * 
+	 * @param message
+	 *            A string of text to send.
+	 */
+	public boolean sendMessage(String message)
+	{
+		boolean intState = false;
+		// Check that we're actually connected before trying anything
+		if (getState() != STATE_CONNECTED)
+		{
+			intState = false;
+			return intState;
+		}
+
+		// Check that there's actually something to send
+		if (message.length() > 0)
+		{
+			// Get the message bytes and tell the MLBluetoothService to write
+			byte[] send = message.getBytes();
+			write(send);
+			intState = true;
+		}
+		return intState;
+	}
+
+	public boolean sendMessage(byte[] message)
+	{
+		boolean intState = false;
+		// Check that we're actually connected before trying anything
+		if (getState() != STATE_CONNECTED)
+		{
+			intState = false;
+			return intState;
+		}
+		
+		// Check that there's actually something to send
+		if (message.length > 0)
+		{
+			write(message);
+			intState = true;
+		}
+		return intState;
+	}
+	
 	/**
 	 * Indicate that the connection attempt failed and notify the UI Activity.
 	 */
 	private void connectionFailed()
 	{
-		// Send a failure message back to the Activity
-		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
-		Bundle bundle = new Bundle();
-		bundle.putString(MLStartupActivity.TOAST, "Unable to connect device");
-		msg.setData(bundle);
-		mHandler.sendMessage(msg);
+		//TODO: get that fixed
+//		// Send a failure message back to the Activity
+//		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
+//		Bundle bundle = new Bundle();
+//		bundle.putString(MLStartupActivity.TOAST, "Unable to connect device");
+//		msg.setData(bundle);
+//		mHandler.sendMessage(msg);
 
 		// Start the service over to restart listening mode
 		MLBluetoothService.this.start();
@@ -312,17 +373,26 @@ public class MLBluetoothService
 	 */
 	private void connectionLost()
 	{
-		// Send a failure message back to the Activity
-		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
-		Bundle bundle = new Bundle();
-		bundle.putString(MLStartupActivity.TOAST, "Device connection was lost");
-		msg.setData(bundle);
-		mHandler.sendMessage(msg);
+		//TODO: get that fixed
+//		// Send a failure message back to the Activity
+//		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
+//		Bundle bundle = new Bundle();
+//		bundle.putString(MLStartupActivity.TOAST, "Device connection was lost");
+//		msg.setData(bundle);
+//		mHandler.sendMessage(msg);
 
 		// Start the service over to restart listening mode
 		MLBluetoothService.this.start();
 	}
 
+	public void AddHandler(Handler handler)
+	{
+		if(handler != null)
+		{
+			mHandler.add(handler);
+		}
+	}
+	
 	/**
 	 * This thread runs while listening for incoming connections. It behaves
 	 * like a server-side client. It runs until a connection is accepted (or
@@ -545,8 +615,7 @@ public class MLBluetoothService
 		public void run()
 		{
 			Log.i(TAG, "BEGIN mConnectedThread");
-			byte[] buffer = new byte[7];
-			int bytes;
+			byte[] buffer = new byte[CommandHandler.COMMAND_LENGTH];
 
 			// Keep listening to the InputStream while connected
 			while (true)
@@ -556,7 +625,9 @@ public class MLBluetoothService
 					// Read from the InputStream
 					ReadWholeArray(mmInStream, buffer);
 					// Send the obtained bytes to the UI Activity
-					mHandler.obtainMessage(MLStartupActivity.MESSAGE_READ, -1, -1, buffer).sendToTarget();
+					mReadBuffer = buffer;
+					buffer = new byte[CommandHandler.COMMAND_LENGTH];
+					sendMessages(MLStartupActivity.MESSAGE_READ, -1, -1, mReadBuffer);
 				} catch (IOException e)
 				{
 					Log.e(TAG, "disconnected", e);
@@ -580,13 +651,14 @@ public class MLBluetoothService
 				try
 				{
 					// This is because sending too fast isn't good for the hardware. And not all commands are replied by an acknowledge
-					Thread.sleep(20);
+					Thread.sleep(COMMAND_TIME);
 				} catch (InterruptedException e)
 				{
 					Log.w(TAG,"Setting thread to sleep failed");
 				}
 				// Share the sent message back to the UI Activity
-				mHandler.obtainMessage(MLStartupActivity.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+				//sendMessages(MLStartupActivity.MESSAGE_WRITE, -1, -1, null);
+				
 			} catch (IOException e)
 			{
 				Log.e(TAG, "Exception during write", e);
@@ -610,6 +682,7 @@ public class MLBluetoothService
 			int remaining = data.length;
 			while (remaining > 0)
 			{
+				
 				int read = stream.read(data, offset, remaining);
 				if (read <= 0)
 				{
@@ -619,7 +692,5 @@ public class MLBluetoothService
 				offset += read;
 			}
 		}
-
 	}
-
 }

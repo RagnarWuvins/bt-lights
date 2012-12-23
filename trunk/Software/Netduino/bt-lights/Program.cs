@@ -73,7 +73,7 @@ namespace BTLights
             // define the channels and the handler.
             channels = new LightStringCollection(Constants.G_SET_ADDRESS, _SPIBus);
             // setting up the serial port for the communication to the BT module
-            _BT = new BTModule("COM1", 19200, Parity.None, 8, StopBits.One);
+            _BT = new BTModule("COM1", Constants.BAUDRATE, Parity.None, 8, StopBits.One);
             // create a new command Handler
             mCommandHandler = new CommandHandler();
 
@@ -127,27 +127,29 @@ namespace BTLights
 
         public static void SendChannelData(object sender, BTEventArgs e)
         {
-            byte[] data = new byte[5];
-            data[0] = (byte)((e.CommandClass << 4) | e.CommandMode);
-            data[1] = (byte)((e.CommandAddress & 0xFF00) >> 8);
-            data[2] = (byte)(e.CommandAddress & 0x00FF);
-            data[3] = (byte)(e.CommandValue);
-            data[4] = (byte)(e.CommandChecksum);
+            byte[] data = new byte[Constants.C_LENGTH - 2];
+            data[0] = (byte)(e.CommandClass);
+            data[1] = (byte)(e.CommandMode);
+            data[2] = (byte)((e.CommandAddress & 0xFF00) >> 8);
+            data[3] = (byte)(e.CommandAddress & 0x00FF);
+            data[4] = (byte)(e.CommandValue);
+            data[5] = (byte)(e.CommandChecksum);
             _BT.send2BT(data);
         }
 
         public static void GlobalCommandHandler(object sender, BTEventArgs e)
         {
             int channel = e.CommandAddress;
-            byte[] data = new byte[5];
+            byte[] data = new byte[Constants.C_LENGTH - 2];
             _BT.send2BT(data);
             switch (e.CommandMode)
             {
                 case (int)Constants.GLOBAL_COMMAND.CMD_GET_CC:
                     data = new byte[Constants.C_LENGTH - 2];
-                    data[0] = (((int)Constants.CLASS.GC_CMD << 4) | (int)Constants.GLOBAL_COMMAND.CMD_GET_CC);
-                    data[3] = (byte)CommandHandler.CommandCounter;
-                    data[4] = (byte)(data[0] + data[3]);
+                    data[0] = (int)Constants.CLASS.GC_CMD;
+                    data[1] = (int)Constants.GLOBAL_COMMAND.CMD_GET_CC;
+                    data[4] = (byte)CommandHandler.CommandCounter;
+                    data[5] = (byte)(data[0] + data[4]);
                     _BT.send2BT(data);
                     break;
                 case (int)Constants.GLOBAL_COMMAND.CMD_RESET_CC:
@@ -172,17 +174,25 @@ namespace BTLights
                     }
                     break;
                 case (int)Constants.GLOBAL_COMMAND.CMD_GET_SYS_TIME:
-                    _BT.send2BT((long)sysClock.TotalTime);                    
+                    long sysTimeHeader = (((long)Constants.CLASS.GC_CMD << 8) | (long)Constants.GLOBAL_COMMAND.CMD_GET_SYS_TIME) << 32;
+                    long temp = sysTimeHeader | ((long)sysClock.TotalTime & 0x00FFFFL);
+                    _BT.send2BT(temp);                    
                     break;
                 case(int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION:
                     data = new byte[Constants.C_LENGTH - 2];
-                    data[0] = (((int)Constants.CLASS.GC_CMD << 4) | (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION);
-                    data[3] = (HW_VERSION << 4) | (HW_BUILD);
-                    data[4] = (byte)(data[0] + data[3]);
+                    data[0] = (int)Constants.CLASS.GC_CMD;
+                    data[1] = (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION;
+                    data[4] = (HW_VERSION << 4) | (HW_BUILD);
+                    data[5] = (byte)(data[0] + data[4]);
                     _BT.send2BT(data);
                     break;
                 case(int)Constants.GLOBAL_COMMAND.CMD_RESET_BT:
                     _BT.Reset();
+                    break;
+                case (int)Constants.GLOBAL_COMMAND.CMD_GET_CMD_TIME:
+                    long sysCmdTimeHead = (((long)Constants.CLASS.GC_CMD << 8) | (long)Constants.GLOBAL_COMMAND.CMD_GET_CMD_TIME) << 32;
+                    long chtemp = sysCmdTimeHead | (_BT.GetCommandProcessingTime() & 0xFFFFFFL);
+                    _BT.send2BT(chtemp);  
                     break;
                 default:
                     break;
@@ -196,7 +206,7 @@ namespace BTLights
         public static void THROW_ERROR(object error, String addOutput = "")
         {
 
-            long errorHeader = (((long)Constants.CLASS.GC_CMD << 4) | (long)Constants.GLOBAL_COMMAND.CMD_ERROR) << 32;
+            long errorHeader = (((long)Constants.CLASS.GC_CMD << 8) | (long)Constants.GLOBAL_COMMAND.CMD_ERROR) << 32;
             long temp = errorHeader | ((long)(int)error << 24) | (((long)sysClock.TotalTime) & 0x00FFFFFFL);            
             errorlog.log[errorlog.logIndex] = temp;
             if (errorlog.logIndex < Constants.ERROR_LOG_LENGTH - 1)

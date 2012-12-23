@@ -1,7 +1,7 @@
 using System;
 using Microsoft.SPOT;
 
-namespace System.Diagnostics
+namespace BTLights
 {   
     /// <summary>
     /// ACtually this class is taken from the Netduino forum: http://forums.netduino.com/index.php?/topic/97-systemdiagnosticsstopwatch-class/

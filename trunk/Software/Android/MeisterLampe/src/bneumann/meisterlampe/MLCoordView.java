@@ -1,20 +1,16 @@
 package bneumann.meisterlampe;
 
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.os.SystemClock;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Point;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.FrameLayout;
-import android.widget.TextView;
+import android.widget.Toast;
 
 public class MLCoordView extends Activity implements OnTouchListener
 {
@@ -22,21 +18,28 @@ public class MLCoordView extends Activity implements OnTouchListener
 	public static final String XY_CHANNEL = "xyChannel";
 	public static final String XY_VALUE = "xyValue";
 	public static final String SET_CHANNEL_VALUE = "sendChannelValue";
-	private TextView m_xyDebug;
+	private static final String TAG = "MLCoordView";
+	protected static final String SETUP_CHANNEL_NUM = "openChannelSetup";
 	private TimeController m_drawView;
 	private FrameLayout m_frame;
-	private SharedPreferences m_pref;
 	private int mChannels;
-	private Intent mSendEvent;
-
+	private static Intent mSendEvent;
+	private MLBluetoothService mMLBluetoothService;
+	private CommandHandler mCommandHandler;
+	private long mLowPass;
+	private final int LOWPASS_LENGTH = 50;
+	private int[] mHistX = new int[LOWPASS_LENGTH];
+	private int[] mHistY = new int[LOWPASS_LENGTH]; 
+	private int mEventCounter = 0;
+	private boolean mLockTouch = true;
+	private static int lastChannel = 0;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_mlcoord_view);
-		
-		m_pref = PreferenceManager.getDefaultSharedPreferences(this);
-		mChannels = m_pref.getInt("NUMBER_OF_CHANNELS", MLStartupActivity.NUMBER_OF_CHANNELS);
+		mChannels = MLStartupActivity.numberOfChannels;
 		
 		m_drawView = new TimeController(this, mChannels);
 		m_drawView.setBackgroundColor(Color.BLACK);
@@ -44,31 +47,102 @@ public class MLCoordView extends Activity implements OnTouchListener
 		m_frame = (FrameLayout) findViewById(R.id.CoordFrame);
 		m_frame.addView(m_drawView);
 
-//		m_xyDebug = (TextView) findViewById(R.id.xyDebug);
-//		m_xyDebug.setText("What you see is not a test");
+		// setup TouchListener and lowpass filter:
+		mLowPass = SystemClock.uptimeMillis();
 		m_drawView.setOnTouchListener(this);
+							
+
 		m_drawView.setFocusable(true);
 		mSendEvent = new Intent(SET_CHANNEL_VALUE);
-
+		mMLBluetoothService = MLStartupActivity.getBluetoothService();
+		mCommandHandler = new CommandHandler(this, mMLBluetoothService);
 	}
-	public boolean onTouch(View v, MotionEvent event)
+	public void onResume()
 	{
+		super.onResume();
+		mHistX = new int[LOWPASS_LENGTH];
+		mHistY = new int[LOWPASS_LENGTH];
+		mEventCounter = 0;
+		mLockTouch = true;
+		m_drawView.setOnTouchListener(this);
+	}
+	
+	public void onDestroy()
+	{
+		super.onDestroy();
+		mCommandHandler.dispose();
+	}
+	
+	public boolean onTouch(View v, MotionEvent event)
+	{		
+		// Prevent overflow of events
+		if (event.getEventTime() - mLowPass < 10)
+		{
+			return true;
+		}
+		mLowPass = event.getEventTime();
 		// MotionEvent object holds X-Y values
 		if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE)
 		{
-			
-//			String text = "x = " + event.getX() + "\ny = " + event.getY() + "\nChannel = " + curc + "\nValue = " + curv;
-//			m_xyDebug.setText(text);
+			if(mEventCounter >= LOWPASS_LENGTH)
+			{
+				mEventCounter = 0;
+			}
+			int xCoord = Math.round(event.getX());
+			int yCoord = Math.round(event.getY());
+			mHistX[mEventCounter] = xCoord;
+			mHistY[mEventCounter] = yCoord;
 			// get the touch point and tell the Controller where we are
-			m_drawView.setPoint(event.getX(), event.getY());
+			m_drawView.setPoint(xCoord, yCoord);
 			int curc = m_drawView.getCurrentChannel();
 			int curv = m_drawView.getCurrentValue();	
-			// inform the main Activity so they can send the bluetooth command out
-			mSendEvent.putExtra(XY_CHANNEL, curc);
-			mSendEvent.putExtra(XY_VALUE, curv);
-			sendBroadcast(mSendEvent);
+			
+			if(curc != lastChannel)
+			{
+				m_drawView.enableFading();
+				lastChannel = curc;
+			}
+			
+			// inform the main Activity so they can send the bluetooth command out		
+			boolean state = mCommandHandler.SetChannelValue(mCommandHandler.ChannelToAddress(curc), curv);
+			if (!state)
+			{
+				Toast.makeText(this, R.string.sending_to_module_failed, Toast.LENGTH_SHORT).show();
+			}
+			// release screen if finger not moving	
+			int diff = 0;
+			for (int index = 0; index < LOWPASS_LENGTH - 1; index++)
+			{
+				diff += mHistX[index + 1] - mHistX[index];
+				diff += mHistY[index + 1] - mHistY[index];
+			}
+			if(diff == 0)
+			{
+				mLockTouch = false;
+			}
+			mEventCounter++;
 		}
-
+		else
+		{
+			mHistX = new int[LOWPASS_LENGTH];
+			mHistY = new int[LOWPASS_LENGTH];
+			mEventCounter = 0;
+			mLockTouch = true;
+		}
+		if(!mLockTouch)
+		{
+			m_drawView.setOnTouchListener(null);
+			startChannelSetup();
+		}
 		return true;
+	}
+	
+	
+	private void startChannelSetup()
+	{
+		Log.d(TAG, "I have press loooong on channel " + m_drawView.getCurrentChannel());
+		Intent openChannelTab = new Intent(getApplicationContext(), MLChannelSetup.class);
+		openChannelTab.putExtra(SETUP_CHANNEL_NUM, m_drawView.getCurrentChannel());
+		startActivity(openChannelTab);	
 	}
 }

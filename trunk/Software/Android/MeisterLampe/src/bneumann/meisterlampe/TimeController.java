@@ -1,21 +1,21 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-import junit.framework.Assert;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.os.Handler;
-import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 
+/**
+ * Special view that displays x and y coordinates on the screen as channels visuals
+ * @author Benjamin Neumann
+ *
+ */
 public class TimeController extends View
 {
 
@@ -32,6 +32,11 @@ public class TimeController extends View
 	private int mChanWidth;
 	private ArrayList<FadingRect> mFadingChannels;
 
+	/**
+	 * Constructor for time control, takes the number of channels
+	 * @param context Context of the apps main Activity
+	 * @param channels number of channels to display (always 0-x)
+	 */
 	public TimeController(Context context, int channels)
 	{
 		super(context);
@@ -65,11 +70,31 @@ public class TimeController extends View
 		
 	}
 
-	public void setPoint(float x, float y)
+	/**
+	 * Set the point to display
+	 * @param x X Coordinate
+	 * @param y Y Coordinate
+	 */
+	public void setPoint(int x, int y)
 	{
-		m_point.x = (int) x;
-		m_point.y = (int) y;
+		m_point.x = x;
+		m_point.y = y;
 		mFadingChannels.get(getCurrentChannel()).setAlpha(getCurrentValue());
+	}
+	
+	public void enableFading()
+	{
+		for(int i = 0; i < mFadingChannels.size(); i++)
+		{
+			if (mFadingChannels.get(i).mChannel != getCurrentChannel())
+			{
+				mFadingChannels.get(i).enableFading(true);
+			}
+			else
+			{
+				mFadingChannels.get(i).enableFading(false);
+			}
+		}
 	}
 
 	/**
@@ -81,7 +106,7 @@ public class TimeController extends View
 	private void drawChannels(Canvas canvas)
 	{
 		int chanWidth = mWidth / mChannels;
-		for (int i = 0; i < mChannels + 1; i++)
+		for (int i = 0; i < mChannels; i++)
 		{
 			canvas.drawLine(i * chanWidth, 0, i * chanWidth, mHeight, mChannelPaint);
 		}
@@ -95,17 +120,16 @@ public class TimeController extends View
 	public int getCurrentChannel()
 	{
 		int curChannel = (m_point.x / mChanWidth);
-		if (curChannel > MLStartupActivity.NUMBER_OF_CHANNELS - 1)
+		if (curChannel > MLStartupActivity.numberOfChannels - 1)
 		{
-			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + MLStartupActivity.NUMBER_OF_CHANNELS);
-			curChannel =  MLStartupActivity.NUMBER_OF_CHANNELS - 1;
+			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + MLStartupActivity.numberOfChannels);
+			curChannel =  MLStartupActivity.numberOfChannels - 1;
 		}
 		return curChannel;
 	}
 
 	public int getCurrentValue()
-	{
-		
+	{		
 		return MLStartupActivity.MAX_CHANNEL_VALUE - (int) (((double) m_point.y / (double) mHeight) * (double) MLStartupActivity.MAX_CHANNEL_VALUE);
 	}
 
@@ -114,12 +138,13 @@ public class TimeController extends View
 		private static final int CYCLE_TIME = 20;
 		private static final int FADING_STEP = 20;
 		protected static final String TAG = "FadingRect";
-		private int mChannel;
+		public int mChannel;
 		private Paint mPaint;
 		private int mAlpha;
 		private Handler mHandler;
 		private Runnable mAnimationTask;
-
+		private boolean fadeOut = true;
+		
 		private FadingRect(int channel)
 		{
 			mAlpha = 0;
@@ -146,9 +171,17 @@ public class TimeController extends View
 				}
 			};
 			// start the fading
-			mHandler.postDelayed(mAnimationTask, CYCLE_TIME);
+			if (fadeOut)
+			{
+				mHandler.postDelayed(mAnimationTask, CYCLE_TIME);
+			}
 		}
 
+		public void enableFading(boolean enableSwitch)
+		{
+			fadeOut = enableSwitch;
+		}
+		
 		public void setAlpha(int value)
 		{
 			if (value > 255 || value < 0)
@@ -180,7 +213,7 @@ public class TimeController extends View
 		 */
 		private void start()
 		{
-			mHandler.postDelayed(mAnimationTask, CYCLE_TIME);
+			mHandler.post(mAnimationTask);
 		}
 		/**
 		 * Stop the fading
