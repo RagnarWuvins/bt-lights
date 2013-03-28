@@ -47,7 +47,7 @@ namespace BluetoothLights
                     _srl.Open();
                     Properties.Settings.Default.lastPort = _srl.PortName;
                     Properties.Settings.Default.Save();
-                    _ctrl = new controller(_srl);
+                    _ctrl = new controller();
                     _ctrl.Show();
                     statusBar.Text = "connected";
                 }

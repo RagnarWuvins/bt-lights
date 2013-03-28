@@ -26,18 +26,7 @@ namespace BluetoothLights
                 @"c:\temp\SerializationOverview.xml");
             writer.Serialize(file, constClass);
             file.Close();
-
-            if (true)
-            {
-                SerialPort srl = new SerialPort("COM7", Constants.BAUDRATE);
-                srl.NewLine = "\r\n";
-                Application.Run(new controller(srl));
-            }
-            else
-            {
-                Application.Run(new Form1());
-            }
-
+            Application.Run(new controller());
         }
     }
 }

@@ -47,7 +47,7 @@ namespace BTLights
         {
             if (mRawCommand == null)
             {
-                Program.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
+                MainProgram.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
                 return;
             }
             BTEventArgs e = new BTEventArgs();
@@ -65,7 +65,7 @@ namespace BTLights
             }
             if (!mInternalCommand)
             {
-                Program.THROW_ERROR(Constants.FW_ERRORS.CMD_CORRUPT);
+                MainProgram.THROW_ERROR(Constants.FW_ERRORS.CMD_CORRUPT);
                 e.CommandRaw = mRawCommand;
                 ExternalRequest(this, e);
             }

@@ -113,6 +113,7 @@ namespace BTLights
             this.rise = 6.0;
             this.offset = 6.0;
         }
+
         // Delegate for timer
         public void ModeSelector(object modeInfo)
         {
@@ -144,7 +145,7 @@ namespace BTLights
                             Saw_rev(_lowerLimit, _upperLimit);
                             break;
                         default:
-                            Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
+                            MainProgram.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
                             functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;             
                             break;
                     }
@@ -192,7 +193,7 @@ namespace BTLights
                 int channelDissapation = (_lastValue - Value) >= 0 ? (_lastValue - Value) : -(_lastValue - Value);
                 if (channelDissapation > Constants.MAX_CHANNEL_DISSAPATION)
                 {
-                    Program.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_VALUE_ASSERT);
+                    MainProgram.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_VALUE_ASSERT);
                 }
                 writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value };
                 _SPIBus.Write(writeBuffer);

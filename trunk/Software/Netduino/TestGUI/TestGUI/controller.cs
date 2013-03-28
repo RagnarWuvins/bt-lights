@@ -16,7 +16,7 @@ namespace BluetoothLights
 {
     public partial class controller : Form
     {
-        private static string[] _toolButtonDesc = {"Plot channel values", "Generate XML for Android", "Clear output"};
+        private static string[] _toolButtonDesc = {"Plot channel values", "Generate XML for Android", "Clear output", "Stress Test"};
 
         private CheckBox[] _checkBoxes = new CheckBox[Constants.G_MAX_CHANNELS];
         private Button[] _cmdButtons = new Button[(int)Constants.COMMAND.CMD_NUM];
@@ -27,6 +27,7 @@ namespace BluetoothLights
         private Button[] _toolButtons = new Button[_toolButtonDesc.Length];
         private static bool _childrenRunning = false;
 
+        private static int _offset = 30;
         private static int _margin = 10;
         private static int _cbWidth = 80;
         private static int _bWidth = 120;
@@ -38,7 +39,7 @@ namespace BluetoothLights
         private static int _sliderYPos = functions.GetMax(_allElements);
         private static int _sliderWidth = 2 * _margin + 2 * _bWidth + _cbWidth;        
         private static int _width = _sliderWidth + 4 * _margin;
-        private static int _height = 700;
+        private static int _height = 850;
 
         private static int _cla = 0;
         private static int _mode = 0;        
@@ -47,22 +48,17 @@ namespace BluetoothLights
         private static SerialPort _srl;
         static int entryCounter = 0;
 
-        public controller(SerialPort srl)
+        public controller()
         {
-            InitializeComponent();
-            _srl = srl;
-            if (!_srl.IsOpen)
-            {
-                try
-                {
-                    _srl.Close();
-                    _srl.Open();
-                }
-                catch
-                {
-                    MessageBox.Show("Error while opening COM interface.", "Critical Warning");
-                }
-            }
+            InitializeComponent();            
+
+            connectComBox.Items.AddRange(SerialPort.GetPortNames());
+            connectComBox.SelectedItem = Properties.Settings.Default.lastPort;
+
+            statusBar.Text = "Disconnected";
+
+            _srl = new SerialPort();
+            _srl.PortName = (string)connectComBox.SelectedItem;
             _srl.NewLine = "\r\n";
             _srl.DataReceived += new SerialDataReceivedEventHandler(_dataReceived);
 
@@ -70,7 +66,7 @@ namespace BluetoothLights
             {
                 CheckBox cb = _checkBoxes[channelCounter];
                 cb = new CheckBox();
-                cb.Location = new Point(_margin, (channelCounter * _bHeight) + _margin);
+                cb.Location = new Point(_margin, (channelCounter * _bHeight) + _margin + _offset);
                 cb.Name = String.Format("_channel{0}", channelCounter);
                 cb.Size = new Size(_cbWidth, _bHeight);
                 cb.TabIndex = _elementNum;
@@ -88,7 +84,7 @@ namespace BluetoothLights
 
                 Button bt = _cmdButtons[buttonCounter];
                 bt = new Button();
-                bt.Location = new Point((_margin * 2 + _cbWidth), (buttonCounter * _bHeight + _margin));
+                bt.Location = new Point((_margin * 2 + _cbWidth), (buttonCounter * _bHeight + _margin + _offset));
                 bt.Name = String.Format("_cmdButton{0}", buttonCounter);
                 bt.Size = new Size(_bWidth, _bHeight);
                 bt.TabIndex = _elementNum;
@@ -105,7 +101,7 @@ namespace BluetoothLights
 
                 Button bt = _gCmdButtons[buttonCounter];
                 bt = new Button();
-                bt.Location = new Point((_margin * 3 + _cbWidth + _bWidth), (buttonCounter * _bHeight + _margin));
+                bt.Location = new Point((_margin * 3 + _cbWidth + _bWidth), (buttonCounter * _bHeight + _margin + _offset));
                 bt.Name = String.Format("_gCmdButton{0}", buttonCounter);
                 bt.Size = new Size(_bWidth, _bHeight);
                 bt.TabIndex = _elementNum;
@@ -117,7 +113,7 @@ namespace BluetoothLights
             }
 
             _valueBar.Orientation = Orientation.Horizontal;
-            _valueBar.Location = new Point(_margin, _sliderYPos * _bHeight+ _margin * 2);
+            _valueBar.Location = new Point(_margin, _sliderYPos * _bHeight + _margin * 2 + _offset);
             _valueBar.Name = "_valueBar";
             _valueBar.Size = new Size(_sliderWidth, _bHeight);
             _valueBar.Maximum = 255;
@@ -126,14 +122,14 @@ namespace BluetoothLights
             this.Controls.Add(_valueBar);
             _elementNum++;
 
-            _textBox.Location = new Point(_margin, _valueBar.Location.Y + _valueBar.Size.Height + _margin);
+            _textBox.Location = new Point(_margin, _valueBar.Location.Y + _valueBar.Size.Height + _margin + _offset);
             _textBox.Name = "_textBox";
             _textBox.ValueChanged += new EventHandler(_textBox_Change);
             _textBox.Maximum = 255;
             _textBox.Minimum = 0;
             this.Controls.Add(_textBox);
 
-            _output.Location = new Point(_margin, _textBox.Location.Y + _textBox.Size.Height + _margin);
+            _output.Location = new Point(_margin, _textBox.Location.Y + _textBox.Size.Height + _margin + _offset);
             _output.Name = "_output";
             _output.Multiline = true;
             System.Drawing.Font tbFont = new Font("Courier New", 8, FontStyle.Bold);
@@ -147,7 +143,7 @@ namespace BluetoothLights
             {
                 Button tb = _toolButtons[toolButtonCounter];
                 tb = new Button();
-                tb.Location = new Point(_margin, _output.Location.Y + _output.Size.Height + _margin + (toolButtonCounter * _bHeight));
+                tb.Location = new Point(_margin, _output.Location.Y + _output.Size.Height + _margin + (toolButtonCounter * _bHeight) + _offset);
                 tb.Name = String.Format("tb{0}", toolButtonCounter);
                 tb.Size = new Size(_sliderWidth, _bHeight);
                 tb.TabIndex = _elementNum;
@@ -189,6 +185,28 @@ namespace BluetoothLights
                     break;
                 case "tb2":
                     _output.Clear();
+                    break;
+                case "tb3":
+                    _srl.DataReceived -= new SerialDataReceivedEventHandler(_dataReceived);
+                    long startTime = DateTime.Now.Millisecond;
+                    // Clear counter
+                    _mode = (int)Constants.GLOBAL_COMMAND.CMD_RESET_CC;
+                    _cla = (int)Constants.CLASS.GC_CMD;
+                    _sendData();
+                    // Send 100 commands
+                    for (int i = 0; i < 100; i++)
+                    {
+                        _mode = (int)Constants.GLOBAL_COMMAND.CMD_GET_CC;
+                        _cla = (int)Constants.CLASS.GC_CMD;
+                        byte[] cmd = _sendData();
+                        debugOut(String.Format("Command: {0} at {1}\n", BitConverter.ToString(cmd), DateTime.Now.Millisecond), true);
+                        Thread.Sleep(20);
+                    }
+                    long endTime = DateTime.Now.Millisecond - startTime;
+                    debugOut(String.Format("Sending 100 commands took: {0} ms\n", endTime), true);
+                    _srl.DiscardInBuffer();
+                    Thread.Sleep(1000);
+                    _srl.DataReceived += new SerialDataReceivedEventHandler(_dataReceived);
                     break;
                 default:
                     break;
@@ -284,7 +302,8 @@ namespace BluetoothLights
                         {
                             continue;
                         }
-                        byte[] test = ASCIIEncoding.UTF8.GetBytes(srl.ReadLine());
+                        string input = srl.ReadLine();
+                        byte[] test = ASCIIEncoding.UTF8.GetBytes(input);
                         cla = test[0];
                         mode = test[1];
                         address = test[2] << 8 | test[3];
@@ -352,7 +371,7 @@ namespace BluetoothLights
             
         }
 
-        private static void _sendData()
+        private static byte[] _sendData()
         {
             byte _class = (byte)_cla;
             byte _mod = (byte)_mode;            
@@ -362,6 +381,7 @@ namespace BluetoothLights
 
             byte[] command = { _class, _mod, _address_higher, _adress_lower, (byte)_value, _crc, 0xD, 0xA };
             _srl.Write(command, 0, command.Length);
+            return command;
         }
 
         private static int _string2enum(string text)
@@ -431,6 +451,42 @@ namespace BluetoothLights
                 _output.SelectionStart = _output.Text.Length;
                 _output.ScrollToCaret();
 
+            }
+        }
+
+        private void connectCom_Click(object sender, EventArgs e)
+        {
+            _srl.PortName = (string)connectComBox.SelectedItem;
+            statusBar.Text = "Disconnected";
+            if (!_srl.IsOpen)
+            {
+                try
+                {
+                    _srl.Close();
+                    _srl.Open();
+                    statusBar.Text = "Connected";
+                }
+                catch
+                {
+                    MessageBox.Show("Error while opening COM interface.", "Critical Warning");
+                }
+            }
+        }
+
+        private void disconnectCom_Click(object sender, EventArgs e)
+        {
+            if (_srl.IsOpen)
+            {
+                statusBar.Text = "Connected";
+                try
+                {
+                    _srl.Close();
+                    statusBar.Text = "Disconnected";
+                }
+                catch
+                {
+                    MessageBox.Show("Error while disconnecting COM interface.", "Critical Warning");
+                }
             }
         }
     }

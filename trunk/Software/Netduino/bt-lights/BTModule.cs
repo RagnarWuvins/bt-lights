@@ -24,6 +24,9 @@ namespace BTLights
         private Stopwatch btClock = Stopwatch.StartNew();
         private long elapsedCommandTime = 0;
         private bool clocklock = false;
+        private static byte CR = 0xA; //This is the ASCII code for a carriage return
+        private static byte LF = 0xD; //This is the ASCII code for a line feed
+
 
         /// <summary>Event that is called when a command is received (Termination is \r\n or 0xA, 0xD)</summary>
         public event BTEvent CommandReceived;
@@ -41,7 +44,8 @@ namespace BTLights
             UNKNOWN,        // no reply or something
         }
         const int bufferMax = 70;
-        const int numOfBuffer = 2;        
+        const int numOfBuffer = 2;
+        private int readBufferPosition;
 
         /// <summary>
         /// Constructor for the Bluetooth Module class
@@ -118,7 +122,7 @@ namespace BTLights
             _writeBuffer = new byte[Constants.C_LENGTH];
             Debug.Print("send2BT: OUT: Integer: " + command);
             // max length of int is 4 byte :/
-            for (int i = 0; i < 4 ; ++i)
+            for (int i = 0; i < 4; ++i)
             {
                 byte temp = (byte)((command >> i * 8) & 0xFF);
                 _writeBuffer[Constants.C_LENGTH - i - 3] = temp;
@@ -202,36 +206,36 @@ namespace BTLights
         /// </summary>
         public int ConnectionStatus
         {
-            get 
+            get
             {
                 int lastIndex = mATreplyIndex;
-                dump(new string[]{"at+state?"});
+                dump(new string[] { "at+state?" });
                 STATES state = STATES.UNKNOWN;
                 switch (mATreply[lastIndex])
                 {
                     case "+STATE:INITIALIZED":
-                        state =  STATES.INITIALIZED;
+                        state = STATES.INITIALIZED;
                         break;
                     case "+STATE:READY":
-                        state =  STATES.READY;
+                        state = STATES.READY;
                         break;
                     case "+STATE:PAIRABLE":
-                        state =  STATES.PAIRABLE;
+                        state = STATES.PAIRABLE;
                         break;
                     case "+STATE:PAIRED":
-                        state =  STATES.PAIRED;
+                        state = STATES.PAIRED;
                         break;
                     case "+STATE:INQUIRING":
-                        state =  STATES.INQUIRING;
+                        state = STATES.INQUIRING;
                         break;
                     case "+STATE:CONNECTING":
-                        state =  STATES.CONNECTING;
+                        state = STATES.CONNECTING;
                         break;
                     case "+STATE:CONNECTED":
-                        state =  STATES.CONNECTED;
+                        state = STATES.CONNECTED;
                         break;
                     case "+STATE: DISCONNECTED":
-                        state =  STATES.DISCONNECTED;
+                        state = STATES.DISCONNECTED;
                         break;
                     default:
                         break;
@@ -263,39 +267,43 @@ namespace BTLights
                 btClock.Start();
                 clocklock = true;
             }
-            int curBufferLength = BytesToRead;
-            //Debug.Print("RI:" + _readIndex + " | WI: " + _writeIndex);
-            byte[] tempBuffer = new Byte[curBufferLength];
-            if (_writeIndex + curBufferLength > mReadBuffer.Length)
+            int bytesAvailable = BytesToRead;
+            if (bytesAvailable > 0)
             {
-                // do the wrap around
-                Read(tempBuffer, 0, curBufferLength);
-                int splitPoint = mReadBuffer.Length - _writeIndex;
-                try
+                byte[] packetBytes = new byte[bytesAvailable];
+                Read(packetBytes, 0, bytesAvailable);
+                for (int i = 0; i < bytesAvailable; i++)
                 {
-                    Array.Copy(tempBuffer, 0, mReadBuffer, _writeIndex, splitPoint);
-                    Array.Copy(tempBuffer, splitPoint, mReadBuffer, 0, curBufferLength - splitPoint);
+                    byte b = packetBytes[i];
+                    byte b4 = i == 0 ? (byte)0 : packetBytes[i - 1];
+                    if ((b == CR) && (b4 == LF))
+                    {
+                        mReadBuffer[readBufferPosition++] = b;
+                        byte[] encodedBytes = new byte[packetBytes.Length]; // + 1 because the splitter demands cr/lf flags
+                        Array.Copy(mReadBuffer, 0, encodedBytes, 0, encodedBytes.Length);
+                        string sb = "";
+                        foreach (byte by in encodedBytes)
+                        {
+                            sb += Convert.HexChar(by) + " ";
+                        }
+                        Debug.Print("Received: " + sb);
+                        readBufferPosition = 0;
+                        BTEventArgs evt = new BTEventArgs();
+                        evt.CommandRaw = encodedBytes;
+                        CommandReceived(this, evt);
+                        elapsedCommandTime = btClock.ElapsedMilliseconds;
+                        btClock.Start();
+                        clocklock = false;
+                    }
+                    else
+                    {
+                        mReadBuffer[readBufferPosition++] = b;
+                    }
                 }
-                catch (Exception)
-                {                    
-                    String errorString = "\nTempbuffer length: " + tempBuffer.Length +
-                                         "\n_writeIndex: " + _writeIndex + 
-                                         "\nsplitPoint: " + splitPoint +
-                                         "\ncurBufferLength: " + curBufferLength;
-                    Program.THROW_ERROR(Constants.FW_ERRORS.BUFFER_INDEX_OUT_RANGE, errorString);
-                    flushBuffer();
-                    return;
-                }
-                _writeIndex = curBufferLength - splitPoint;
             }
-            else
-            {
-                Read(mReadBuffer, _writeIndex, curBufferLength);
-                _writeIndex += curBufferLength;
-            }            
-            startCommandReceive();
+
             // restart the 5 minute timer
-            Program.restartBTTimer();
+            MainProgram.restartBTTimer();
         }
 
         /// <summary>
@@ -343,8 +351,8 @@ namespace BTLights
         /// </summary>
         public void startCommandReceive()
         {
-           Thread getCommand = new Thread(ExtractCommand);
-           getCommand.Start();
+            Thread getCommand = new Thread(ExtractCommand);
+            getCommand.Start();
         }
 
         /// <summary>
@@ -355,7 +363,7 @@ namespace BTLights
             mCommandExtractCounter++;
             // lock to prevent overwrite of the indices
             int readIndex = 0, writeIndex = 0;
-            lock(new object())
+            lock (new object())
             {
                 readIndex = _readIndex;
                 writeIndex = _writeIndex;
@@ -372,7 +380,7 @@ namespace BTLights
                 {
                     if (mReadBuffer[index] == 0x0A)
                     {
-                        
+
                         dataInBufferLength = (mReadBuffer.Length - readIndex) + index + 1;
                         Debug.Print("ExtractCommand: Roundtrip: 0x0A found with at: " + index + " with length: " + dataInBufferLength + " From: " + readIndex);
                         valid = true;
@@ -383,7 +391,7 @@ namespace BTLights
             else
             {
                 for (index = readIndex; index < writeIndex; index++)
-                {                    
+                {
                     if (mReadBuffer[index] == 0x0A)
                     {
                         dataInBufferLength = (index + 1) - readIndex;
@@ -410,7 +418,7 @@ namespace BTLights
             mCommandExtractCounter--;
             if (mCommandExtractCounter != 0)
             {
-                Program.THROW_ERROR(Constants.FW_ERRORS.EXTRACT_RACE_CONDITION);
+                MainProgram.THROW_ERROR(Constants.FW_ERRORS.EXTRACT_RACE_CONDITION);
                 mCommandExtractCounter = 0;
             }
         }

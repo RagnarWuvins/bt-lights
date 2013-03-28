@@ -30,9 +30,18 @@ namespace BTLights
         public static int MAX_CHANNEL_DISSAPATION = 128; // value changes should not exceed this limit
         public static int BT_TIMEOUT = 300000;    // time before bluetooth module resets (5 minutes)
 #if TARGET
-        public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2; // AT pin to switch to bluetooth service commands
-        public static Microsoft.SPOT.Hardware.Cpu.Pin PWM = Pins.GPIO_PIN_D9;   // PWM pin to control the PWM clock of the SPI module
-        public static Microsoft.SPOT.Hardware.Cpu.Pin RESET = Pins.GPIO_PIN_D8; // Reset pin (low activ) to reset the BT module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin RXPIN = Pins.GPIO_PIN_D0;     // RX pin for receiving from UART
+        public static Microsoft.SPOT.Hardware.Cpu.Pin TXPIN = Pins.GPIO_PIN_D1;     // TX pin for transmitting to UART
+        public static Microsoft.SPOT.Hardware.Cpu.Pin ATPIN = Pins.GPIO_PIN_D2;     // AT pin to switch to bluetooth service commands
+        public static Microsoft.SPOT.Hardware.Cpu.Pin RESERVED1 = Pins.GPIO_PIN_D6; // Reserved for future use
+        public static Microsoft.SPOT.Hardware.Cpu.Pin RESERVED2 = Pins.GPIO_PIN_D7; // Reserved for future use
+        public static Microsoft.SPOT.Hardware.Cpu.Pin RESET = Pins.GPIO_PIN_D8;     // Reset pin (low activ) to reset the BT module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin PWM = Pins.GPIO_PIN_D9;       // PWM pin to control the PWM clock of the SPI module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin CS = Pins.GPIO_PIN_D10;       // Slave select of the SPI module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin MOSI = Pins.GPIO_PIN_D11;     // MOISof the SPI module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin MISO = Pins.GPIO_PIN_D12;     // MISO of the SPI module
+        public static Microsoft.SPOT.Hardware.Cpu.Pin SCLK = Pins.GPIO_PIN_D13;     // Serial clock of the SPI module
+
 #endif
 
         public enum FW_ERRORS

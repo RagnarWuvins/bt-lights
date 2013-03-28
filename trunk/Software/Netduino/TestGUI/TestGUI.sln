@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C# Express 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestGUI", "TestGUI\TestGUI.csproj", "{535D599B-D118-4EF6-ADD2-558371171472}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meister Lampe", "TestGUI\Meister Lampe.csproj", "{535D599B-D118-4EF6-ADD2-558371171472}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace BTLights
 {
-    class Program
+    class MainProgram
     {
         public const int HW_VERSION = 2;
         public const int HW_BUILD = 1;
@@ -141,7 +141,6 @@ namespace BTLights
         {
             int channel = e.CommandAddress;
             byte[] data = new byte[Constants.C_LENGTH - 2];
-            _BT.send2BT(data);
             switch (e.CommandMode)
             {
                 case (int)Constants.GLOBAL_COMMAND.CMD_GET_CC:

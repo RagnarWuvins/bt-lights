@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="lastPort" Type="System.String" Scope="User">
-      <Value Profile="(Default)">COM22</Value>
+      <Value Profile="(Default)">COM1</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -35,7 +35,7 @@ namespace BTLights
             }
             catch(UnknownTypeException e)
             {
-                Program.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
+                MainProgram.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
             }            
             return output;
         }
@@ -48,6 +48,32 @@ namespace BTLights
                chars2[i] = (char) (bytes[i]);
             }
             return chars2;
+        }
+
+        public static string HexStr(byte[] p)
+        {
+            char[] c = new char[p.Length * 2 + 2];
+            byte b;
+            c[0] = '0'; c[1] = 'x';
+            for (int y = 0, x = 2; y < p.Length; ++y, ++x)
+            {
+                b = ((byte)(p[y] >> 4));
+                c[x] = (char)(b > 9 ? b + 0x37 : b + 0x30);
+                b = ((byte)(p[y] & 0xF));
+                c[++x] = (char)(b > 9 ? b + 0x37 : b + 0x30);
+            }
+            return new string(c);
+        }
+
+        public static string HexChar(byte p)
+        {
+            char[] c = new char[2];
+            byte b;
+            b = ((byte)(p >> 4));
+            c[0] = (char)(b > 9 ? b + 0x37 : b + 0x30);
+            b = ((byte)(p & 0xF));
+            c[1] = (char)(b > 9 ? b + 0x37 : b + 0x30);
+            return new string(c);
         }
     }
 }

@@ -143,7 +143,7 @@ namespace BTLights
                 }
                 default:
                 {
-                    Program.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_CMD_UNKNOWN, "Channel command unknown");
+                    MainProgram.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_CMD_UNKNOWN, "Channel command unknown");
                     break;
                 }
             }
@@ -285,7 +285,7 @@ namespace BTLights
         {
             if (mode >= (int)Constants.MODE.NUM_OF_MODES)
             {
-                Program.THROW_ERROR(Constants.FW_ERRORS.WRONG_MODE_POINTER);
+                MainProgram.THROW_ERROR(Constants.FW_ERRORS.WRONG_MODE_POINTER);
                 mode = (int)Constants.MODE.NOOP;
             }
             for (int i = 0; i < _numberOfChannels; i++)
@@ -367,7 +367,7 @@ namespace BTLights
                 if (((channel >> i) & 0x1) == 1)
                 {
                     channels[i].timerDelay = delay;
-                    channelTimers[i].Change(channels[i].timerDelay, channels[i].timerPeriod);
+                    channelTimers[i].Change(channels[i].timerDelay * 10, channels[i].timerPeriod);
                 }
             }
         }
@@ -425,6 +425,8 @@ namespace BTLights
                 if (((channel >> i) & 0x1) == 1)
                 {
                     channels[i].dimState = 0;
+                    channelTimers[i].Dispose();
+                    channelTimers[i].Change(channels[i].timerDelay * 10, channels[i].timerPeriod);
                 }
             }
         }
