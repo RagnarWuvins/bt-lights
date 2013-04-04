@@ -28,7 +28,6 @@ public class TimeController extends View
 	private int mHeight;
 	private int mChannels;
 	private Paint mChannelPaint;
-	private int mCurrentChannel;
 	private int mChanWidth;
 	private ArrayList<FadingRect> mFadingChannels;
 
@@ -51,7 +50,6 @@ public class TimeController extends View
 		mChannelPaint.setStrokeWidth(DEFAULT_CHAN_STROKE);
 		mChannelPaint.setColor(DEFAULT_CHAN_COLOR);
 		mChanWidth = mWidth / channels;
-		Canvas canvas = new Canvas();
 		mFadingChannels = new ArrayList<FadingRect>(channels);
 		for (int i = 0; i < channels; i++)
 		{
@@ -120,17 +118,17 @@ public class TimeController extends View
 	public int getCurrentChannel()
 	{
 		int curChannel = (m_point.x / mChanWidth);
-		if (curChannel > MLStartupActivity.numberOfChannels - 1)
+		if (curChannel > MainActivity.connectedLamp.GetNumberOfChannels() - 1)
 		{
-			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + MLStartupActivity.numberOfChannels);
-			curChannel =  MLStartupActivity.numberOfChannels - 1;
+			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + MainActivity.connectedLamp.GetNumberOfChannels());
+			curChannel =  MainActivity.connectedLamp.GetNumberOfChannels() - 1;
 		}
 		return curChannel;
 	}
 
 	public int getCurrentValue()
 	{		
-		return MLStartupActivity.MAX_CHANNEL_VALUE - (int) (((double) m_point.y / (double) mHeight) * (double) MLStartupActivity.MAX_CHANNEL_VALUE);
+		return MainActivity.MAX_CHANNEL_VALUE - (int) (((double) m_point.y / (double) mHeight) * (double) MainActivity.MAX_CHANNEL_VALUE);
 	}
 
 	public class FadingRect

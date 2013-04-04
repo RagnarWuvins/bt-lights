@@ -1,5 +1,6 @@
 package bneumann.meisterlampe;
 
+import bneumann.meisterlampe.CommandHandler.COMMANDS;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.app.Activity;
@@ -23,8 +24,7 @@ public class MLCoordView extends Activity implements OnTouchListener
 	private TimeController m_drawView;
 	private FrameLayout m_frame;
 	private int mChannels;
-	private static Intent mSendEvent;
-	private MLBluetoothService mMLBluetoothService;
+	private BluetoothService mMLBluetoothService;
 	private CommandHandler mCommandHandler;
 	private long mLowPass;
 	private final int LOWPASS_LENGTH = 50;
@@ -39,7 +39,7 @@ public class MLCoordView extends Activity implements OnTouchListener
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_mlcoord_view);
-		mChannels = MLStartupActivity.numberOfChannels;
+		mChannels = MainActivity.connectedLamp.GetNumberOfChannels();
 		
 		m_drawView = new TimeController(this, mChannels);
 		m_drawView.setBackgroundColor(Color.BLACK);
@@ -53,8 +53,8 @@ public class MLCoordView extends Activity implements OnTouchListener
 							
 
 		m_drawView.setFocusable(true);
-		mSendEvent = new Intent(SET_CHANNEL_VALUE);
-		mMLBluetoothService = MLStartupActivity.getBluetoothService();
+		new Intent(SET_CHANNEL_VALUE);
+		mMLBluetoothService = MainActivity.getBluetoothService();
 		mCommandHandler = new CommandHandler(this, mMLBluetoothService);
 	}
 	public void onResume()
@@ -104,11 +104,8 @@ public class MLCoordView extends Activity implements OnTouchListener
 			}
 			
 			// inform the main Activity so they can send the bluetooth command out		
-			boolean state = mCommandHandler.SetChannelValue(mCommandHandler.ChannelToAddress(curc), curv);
-			if (!state)
-			{
-				Toast.makeText(this, R.string.sending_to_module_failed, Toast.LENGTH_SHORT).show();
-			}
+			mCommandHandler.SetChannelProptery(mCommandHandler.ChannelToAddress(curc), COMMANDS.CMD_SET_VAL, curv);
+			
 			// release screen if finger not moving	
 			int diff = 0;
 			for (int index = 0; index < LOWPASS_LENGTH - 1; index++)
@@ -132,17 +129,7 @@ public class MLCoordView extends Activity implements OnTouchListener
 		if(!mLockTouch)
 		{
 			m_drawView.setOnTouchListener(null);
-			startChannelSetup();
 		}
 		return true;
-	}
-	
-	
-	private void startChannelSetup()
-	{
-		Log.d(TAG, "I have press loooong on channel " + m_drawView.getCurrentChannel());
-		Intent openChannelTab = new Intent(getApplicationContext(), MLChannelSetup.class);
-		openChannelTab.putExtra(SETUP_CHANNEL_NUM, m_drawView.getCurrentChannel());
-		startActivity(openChannelTab);	
 	}
 }
