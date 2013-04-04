@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.UUID;
 import android.bluetooth.BluetoothAdapter;
@@ -28,10 +29,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
 /**
@@ -40,7 +38,7 @@ import android.util.Log;
  * connections, a thread for connecting with a device, and a thread for
  * performing data transmissions when connected.
  */
-public class MLBluetoothService
+public class BluetoothService
 {
 	// Debugging
 	private static final String TAG = "BluetoothService";
@@ -64,6 +62,8 @@ public class MLBluetoothService
 	private int mState;
 	private byte[] mReadBuffer;
 	private Context mContext;
+	private Handler connectedHandler;
+	private long mTimeLast;
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
@@ -74,7 +74,7 @@ public class MLBluetoothService
 	public static final int STATE_CONNECTED = 3; // now connected to a remote
 													// device
 
-	private static final int COMMAND_TIME = 15; // pause between commands
+	private static final int COMMAND_TIME = 20; // pause between commands
 	
 	/**
 	 * Constructor. Prepares a new BluetoothChat session.
@@ -84,7 +84,7 @@ public class MLBluetoothService
 	 * @param handler
 	 *            A Handler to send messages back to the UI Activity
 	 */
-	public MLBluetoothService(Context context, Handler handler)
+	public BluetoothService(Context context, Handler handler)
 	{
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
@@ -92,6 +92,14 @@ public class MLBluetoothService
 		mHandler.add(handler);
 		mReadBuffer = new byte[7];
 		mContext = context;
+		connectedHandler = new Handler(); 
+	}
+	
+	private long TimeDiff()
+	{
+		long timeDiff = new Date().getTime() - mTimeLast;
+		mTimeLast = new Date().getTime();
+		return timeDiff;
 	}
 
 	/**
@@ -107,7 +115,7 @@ public class MLBluetoothService
 		mState = state;
 
 		// Give the new state to the Handler so the UI Activity can update
-		sendMessages(MLStartupActivity.MESSAGE_STATE_CHANGE, state, -1, null);
+		sendMessages(MainActivity.MESSAGE_STATE_CHANGE, state, -1, null);
 	}
 
 	private void sendMessages(int what, int arg1, int arg2, Object obj)
@@ -200,7 +208,36 @@ public class MLBluetoothService
 		mConnectThread.start();
 		setState(STATE_CONNECTING);
 	}
-
+	/***
+	 * 
+	 * @param device
+	 * @param secure
+	 */
+	public synchronized void disconnect()
+	{
+		if (mConnectThread != null)
+		{
+			mConnectThread.cancel();
+			mConnectThread = null;
+		}
+		if (mConnectedThread != null)
+		{
+			mConnectedThread.cancel();
+			mConnectedThread = null;
+		}
+		if (mSecureAcceptThread != null)
+		{
+			mSecureAcceptThread.cancel();
+			mSecureAcceptThread = null;
+		}
+		if (mInsecureAcceptThread != null)
+		{
+			mInsecureAcceptThread.cancel();
+			mInsecureAcceptThread = null;
+		}
+		setState(STATE_NONE);
+	}
+	
 	/**
 	 * Start the ConnectedThread to begin managing a Bluetooth connection
 	 * 
@@ -365,24 +402,7 @@ public class MLBluetoothService
 //		mHandler.sendMessage(msg);
 
 		// Start the service over to restart listening mode
-		MLBluetoothService.this.start();
-	}
-
-	/**
-	 * Indicate that the connection was lost and notify the UI Activity.
-	 */
-	private void connectionLost()
-	{
-		//TODO: get that fixed
-//		// Send a failure message back to the Activity
-//		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
-//		Bundle bundle = new Bundle();
-//		bundle.putString(MLStartupActivity.TOAST, "Device connection was lost");
-//		msg.setData(bundle);
-//		mHandler.sendMessage(msg);
-
-		// Start the service over to restart listening mode
-		MLBluetoothService.this.start();
+		BluetoothService.this.start();
 	}
 
 	public void AddHandler(Handler handler)
@@ -451,7 +471,7 @@ public class MLBluetoothService
 				// If a connection was accepted
 				if (socket != null)
 				{
-					synchronized (MLBluetoothService.this)
+					synchronized (BluetoothService.this)
 					{
 						switch (mState)
 						{
@@ -560,7 +580,7 @@ public class MLBluetoothService
 			}
 
 			// Reset the ConnectThread because we're done
-			synchronized (MLBluetoothService.this)
+			synchronized (BluetoothService.this)
 			{
 				mConnectThread = null;
 			}
@@ -590,13 +610,26 @@ public class MLBluetoothService
 		private final BluetoothSocket mmSocket;
 		private final InputStream mmInStream;
 		private final OutputStream mmOutStream;
-
+		private boolean stopWorker;
+		private int readBufferPosition;
+		private byte[] readBuffer;
+		private final byte CR, LF;
+        
 		public ConnectedThread(BluetoothSocket socket, String socketType)
 		{
 			Log.d(TAG, "create ConnectedThread: " + socketType);
 			mmSocket = socket;
 			InputStream tmpIn = null;
 			OutputStream tmpOut = null;
+			
+			// START NEW DRIVER			
+	        CR = 0xA; //This is the ASCII code for a carriage return
+	        LF = 0xD; //This is the ASCII code for a line feed
+	        
+	        stopWorker = false;
+	        readBufferPosition = 0;
+	        readBuffer = new byte[1024];
+	        // END NEW DRIVER
 
 			// Get the BluetoothSocket input and output streams
 			try
@@ -612,7 +645,7 @@ public class MLBluetoothService
 			mmOutStream = tmpOut;
 		}
 
-		public void run()
+		/*public void run()
 		{
 			Log.i(TAG, "BEGIN mConnectedThread");
 			byte[] buffer = new byte[CommandHandler.COMMAND_LENGTH];
@@ -635,7 +668,48 @@ public class MLBluetoothService
 					break;
 				}
 			}
-		}
+		}*/
+		public void run()
+        {                
+           while(!Thread.currentThread().isInterrupted() && !stopWorker)
+           {
+                try 
+                {
+                    int bytesAvailable = mmInStream.available();                        
+                    if(bytesAvailable > 0)
+                    {
+                        byte[] packetBytes = new byte[bytesAvailable];
+                        mmInStream.read(packetBytes);
+                        for(int i=0;i<bytesAvailable;i++)
+                        {
+                            byte b = packetBytes[i];
+                            byte b4 = i == 0 ? 0 : packetBytes[i-1];
+                            if((b == CR) && (b4 == LF))
+                            {
+                                byte[] encodedBytes = new byte[readBufferPosition];
+                                System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length - 1);
+                                final String data = new String(encodedBytes, "US-ASCII");
+                                final StringBuilder sb = new StringBuilder();
+                                for (byte by : encodedBytes) {
+                                    sb.append(String.format("%02X ", by));
+                                }
+                                Log.d("ReceiveModule","Received: " + sb + " at " + TimeDiff());
+                                readBufferPosition = 0;                                    
+                                sendMessages(MainActivity.MESSAGE_READ, -1, -1, encodedBytes);
+                            }
+                            else
+                            {
+                                readBuffer[readBufferPosition++] = b;
+                            }
+                        }
+                    }
+                } 
+                catch (IOException ex) 
+                {
+                    stopWorker = true;
+                }
+           }
+        }
 
 		/**
 		 * Write to the connected OutStream.
@@ -648,16 +722,11 @@ public class MLBluetoothService
 			try
 			{
 				mmOutStream.write(buffer);
-				try
-				{
-					// This is because sending too fast isn't good for the hardware. And not all commands are replied by an acknowledge
-					Thread.sleep(COMMAND_TIME);
-				} catch (InterruptedException e)
-				{
-					Log.w(TAG,"Setting thread to sleep failed");
-				}
-				// Share the sent message back to the UI Activity
-				//sendMessages(MLStartupActivity.MESSAGE_WRITE, -1, -1, null);
+				final StringBuilder sb = new StringBuilder();
+                for (byte by : buffer) {
+                    sb.append(String.format("%02X ", by));
+                }
+				Log.d("SendModule", "Sent: " + sb + " at " + TimeDiff());
 				
 			} catch (IOException e)
 			{

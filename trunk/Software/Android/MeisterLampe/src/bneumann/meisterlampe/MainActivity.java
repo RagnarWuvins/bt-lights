@@ -1,11 +1,21 @@
 package bneumann.meisterlampe;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
+import bneumann.meisterlampe.CommandHandler.COMMANDS;
+import bneumann.meisterlampe.CommandHandler.MODE;
+import bneumann.meisterlampe.Lamp.AcknowledgeReceivedListener;
+import bneumann.meisterlampe.Lamp.Channel;
+import bneumann.meisterlampe.Lamp.ChannelPropertyChangeListener;
+import bneumann.meisterlampe.MainActivity.MyVisCap;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -18,28 +28,25 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.audiofx.Visualizer;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.SeekBar;
-import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableLayout.LayoutParams;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MLStartupActivity extends Activity
+@SuppressLint("ShowToast")
+public class MainActivity extends Activity implements AcknowledgeReceivedListener, ChannelPropertyChangeListener
 {
 	private static final int REQUEST_ENABLE = 0;
 	private static final String TAG = "MeisterLampe startup";
@@ -52,28 +59,29 @@ public class MLStartupActivity extends Activity
 	public static final int MESSAGE_DEVICE_NAME = 4;
 	public static final String DEVICE_NAME = null;
 	public static final String TOAST = null;
-	public static int numberOfChannels = 10;
+	// public static int numberOfChannels = 10;
 	public BluetoothAdapter mBtAdapter;
 	public static ArrayList<String> errorLog = new ArrayList<String>();
-	private static MLBluetoothService mMLBluetoothService;
+	private static BluetoothService mMLBluetoothService;
 	public static Lamp connectedLamp;
-	
+
 	protected String EXTRA_DEVICE_ADDRESS;
-	private boolean mOnOffFlag = true;
+	private int mOnOffFlag = 0;
 	public static int REQUEST_NUMBER = 0;
 	private Intent errorLogIntent = null;
 	private Intent xyTab = null;
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
 	public static final String RESET_HARDWARE = "reset_hardware";
 	private boolean mConnectAtStartup = false;
-	private SeekBar bar;
 	private Toast mToast; // Toast object to prevent overlapping Toasts
 	private ProgressDialog mProgressDialog;
 	private String mDefaultDevice;
 	private CommandHandler mCommandHandler;
-	
+
 	private TableLayout mChannelTable;
-	
+	private static TextView mOutputText;
+	protected boolean reconnectTask = false; // set to true if the system should try to reconnect after STATE_NONE
+
 	/** Called when the activity is first created. */
 
 	@Override
@@ -82,25 +90,58 @@ public class MLStartupActivity extends Activity
 		super.onCreate(savedInstanceState);
 
 		// load settings
+		
+		connectedLamp = new Lamp();
+		connectedLamp.AddAcknowledgeReceivedListener(this);
+		connectedLamp.AddChannelPropertyChangeListener(this);
 		loadSettings();
-		connectedLamp = new Lamp(numberOfChannels);
 
+		
 		setContentView(R.layout.main);
+		mOutputText = (TextView) findViewById(R.id.outputText);
+
+		mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT); // init Toast
+		mChannelTable = (TableLayout) findViewById(R.id.channelTable);
+
+		SetupButtons();
+
 		// initialize bluetooth adapter
 		mBtAdapter = BluetoothAdapter.getDefaultAdapter();
+
 		if (mBtAdapter == null)
 		{
 			Log.d(TAG, "This device does not support bluetooth!");
 			Toast.makeText(this, "This device does not support bluetooth!", Toast.LENGTH_LONG).show();
+			// Setup a commandhandler that doesn't do anything for debug
+			mCommandHandler = new CommandHandler(this, null);
 			return;
 		}
-		mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT); // initialize 1
-																// Toast and 1
-																// Toast only!
-		mChannelTable = (TableLayout) findViewById(R.id.channelTable);
-		setupChannelTable(mChannelTable);
+		
+		// Visualizer test code:
+		Visualizer vis = new Visualizer(0);
+		MyVisCap vc = new MyVisCap();
+		vis.setDataCaptureListener(vc, 100000, false, true);
+		
 	}
 
+	public class MyVisCap implements Visualizer.OnDataCaptureListener
+	{
+
+		public void onFftDataCapture(Visualizer vis, byte[] fft, int samplingRate)
+		{
+			// TODO Auto-generated method stub
+			Log.i(TAG, fft.toString());
+			
+		}
+
+		public void onWaveFormDataCapture(Visualizer vis, byte[] waveform, int samplingRate)
+		{
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+	
 	public void onStart()
 	{
 		super.onStart();
@@ -111,9 +152,10 @@ public class MLStartupActivity extends Activity
 		// start request to enable bluetooth
 		if (mBtAdapter.isEnabled())
 		{
-			setupML();
+			OpenBT();
 
-		} else
+		}
+		else
 		{
 			Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 			startActivityForResult(enabler, REQUEST_ENABLE);
@@ -153,8 +195,18 @@ public class MLStartupActivity extends Activity
 		switch (item.getItemId())
 		{
 		case R.id.menu_error_log:
-			errorLog = new ArrayList<String>();
-			errorLogIntent = new Intent(getApplicationContext(), MLErrorLog.class);
+			connectedLamp.errors.clear();
+			mCommandHandler.GetErrorLog();
+			try
+			{
+				Thread.sleep(500);
+			}
+			catch (InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			errorLogIntent = new Intent(getApplicationContext(), ErrorView.class);
 			startActivity(errorLogIntent);
 			return true;
 		case R.id.menu_reset:
@@ -164,7 +216,7 @@ public class MLStartupActivity extends Activity
 				public void onClick(DialogInterface dialog, int id)
 				{
 					Intent i = new Intent();
-					i.setAction(MLStartupActivity.RESET_HARDWARE);
+					i.setAction(MainActivity.RESET_HARDWARE);
 					sendBroadcast(i);
 					dialog.cancel();
 				}
@@ -179,14 +231,16 @@ public class MLStartupActivity extends Activity
 			alert.show();
 			return true;
 		case R.id.menu_settings:
-			Intent settingsIntent = new Intent(getApplicationContext(), MLSettings.class);
+			Intent settingsIntent = new Intent(getApplicationContext(), Settings.class);
 			startActivity(settingsIntent);
 			return true;
 		case R.id.menu_reconnect:
+			reconnectTask = true;
 			if (mBtAdapter.isEnabled())
 			{
-				setupML();
-			} else
+				mMLBluetoothService.disconnect();
+			}
+			else
 			{
 				Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 				startActivityForResult(enabler, REQUEST_ENABLE);
@@ -207,7 +261,7 @@ public class MLStartupActivity extends Activity
 			switch (resultCode)
 			{
 			case RESULT_OK:
-				setupML();
+				OpenBT();
 				break;
 			case RESULT_CANCELED:
 				break;
@@ -221,7 +275,7 @@ public class MLStartupActivity extends Activity
 		}
 	}
 
-	public void setupML()
+	public void OpenBT()
 	{
 		mProgressDialog = ProgressDialog.show(this, "", getString(R.string.trying_to_connect), false, true);
 		registerReceivers();
@@ -229,14 +283,14 @@ public class MLStartupActivity extends Activity
 		// Initialize the MLBluetoothService to perform bluetooth connections
 		if (mMLBluetoothService == null)
 		{
-			mMLBluetoothService = new MLBluetoothService(this, mHandler);
+			mMLBluetoothService = new BluetoothService(this, mHandler);
 		}
 
 		if (mDefaultDevice != null)
 		{
-			BluetoothDevice device = mBtAdapter.getRemoteDevice(mSettings.getString(MLSettings.DEFAULT_DEVICE, ""));
+			BluetoothDevice device = mBtAdapter.getRemoteDevice(mSettings.getString(Settings.DEFAULT_DEVICE, ""));
 
-			if (mMLBluetoothService.getState() != mMLBluetoothService.STATE_CONNECTED)
+			if (mMLBluetoothService.getState() != BluetoothService.STATE_CONNECTED)
 			{
 				mMLBluetoothService.connect(device, true);
 			}
@@ -244,16 +298,20 @@ public class MLStartupActivity extends Activity
 			{
 				mProgressDialog.cancel();
 			}
-			
-		} else
+
+		}
+		else
 		{
 			mToast.setText(R.string.no_default_device_found);
 			// start to discover bluetooth devices
 			mBtAdapter.startDiscovery();
 		}
+		// create the command handler and setup the interface
 		mCommandHandler = new CommandHandler(this, mMLBluetoothService);
+		mCommandHandler.AddChannelCommandReceivedListener(connectedLamp);
+		mCommandHandler.AddGlobalCommandReceivedListener(connectedLamp);
 	}
-	
+
 	public void setupChannelTable(TableLayout tl)
 	{
 		int thID = 300;
@@ -261,13 +319,13 @@ public class MLStartupActivity extends Activity
 		TableRow th = new TableRow(this);
 		TextView lampText = new TextView(this);
 		boolean trsExist = false;
-		
+
 		if (findViewById(thID) == null)
 		{
 			th.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 			th.setId(thID);
-			lampText.setId(thText);			
-			th.addView(lampText);	
+			lampText.setId(thText);
+			th.addView(lampText);
 			tl.addView(th, new TableLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 		}
 		else
@@ -276,23 +334,23 @@ public class MLStartupActivity extends Activity
 			lampText = (TextView) findViewById(thText);
 			trsExist = true;
 		}
-		
-		Date date = new Date((long)(connectedLamp.SysTime*1000));
+
+		Date date = new Date((long) (connectedLamp.SysTime * 1000));
 		date.setHours(date.getHours() - 1);
 		String formattedDate = new SimpleDateFormat("HH:mm:ss").format(date);
-		
-		lampText.setText(String.format("Commands: %d, Time: %s, Version: %d.%d\n----------------------------",
-				 connectedLamp.CommandCounter, formattedDate, connectedLamp.HWVersion, connectedLamp.HWBuild));
+
+		lampText.setText(String.format("Commands: %d, Time: %s, Version: %d.%d\n----------------------------", connectedLamp.CommandCounter, formattedDate,
+				connectedLamp.HWVersion, connectedLamp.HWBuild));
 		lampText.setTextColor(Color.WHITE);
-		
-		for(int i = 0; i < numberOfChannels; i++ )
+
+		for (int i = 0; i < connectedLamp.GetNumberOfChannels(); i++)
 		{
 			Lamp.Channel ls = connectedLamp.channels[i];
-			
+
 			int trID = 100 + i;
 			int cvID = 200 + i;
-			
-			TableRow tr = new TableRow(this);			
+
+			TableRow tr = new TableRow(this);
 			TextView channelText = new TextView(this);
 			if (!trsExist)
 			{
@@ -304,22 +362,21 @@ public class MLStartupActivity extends Activity
 			else
 			{
 				tr = (TableRow) findViewById(trID);
-				channelText = (TextView) findViewById(cvID);				
-			}			
-			
-			channelText.setText(String.format("Channel: %d, Mode: %d, Value: %d\nMax: %d, Min: %d, Delay: %d\nOffset: %d, Rise: %d Period: %d",
-					ls.ID, ls.mode, ls.value, ls.max, ls.min, ls.delay, ls.rise, ls.offset, ls.period));
+				channelText = (TextView) findViewById(cvID);
+			}
+
+			channelText.setText(String.format("Channel: %d, Mode: %d, Value: %d\nMax: %d, Min: %d, Delay: %d\nOffset: %d, Rise: %d Period: %d", ls.ID, ls.getMode(), ls.getValue(),
+					ls.getMax(), ls.getMin(), ls.getDelay(), ls.getRise(), ls.getOffset(), ls.getPeriod()));
 			channelText.setTextColor(Color.WHITE);
 
-			if(!trsExist)
+			if (!trsExist)
 			{
-				tr.addView(channelText);			
-				/* Add row to TableLayout. */				
+				tr.addView(channelText);
+				/* Add row to TableLayout. */
 				tl.addView(tr, new TableLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 			}
 		}
 	}
-	
 
 	private void registerReceivers()
 	{
@@ -329,7 +386,7 @@ public class MLStartupActivity extends Activity
 		filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
 		registerReceiver(mReceiver, filter);
 
-		filter = new IntentFilter(MLErrorLog.READER_READY);
+		filter = new IntentFilter(ErrorView.READER_READY);
 		registerReceiver(mReceiver, filter);
 
 		filter = new IntentFilter(RESET_HARDWARE);
@@ -337,49 +394,91 @@ public class MLStartupActivity extends Activity
 
 		filter = new IntentFilter(MLCoordView.SET_CHANNEL_VALUE);
 		registerReceiver(mReceiver, filter);
-		
+
 		filter = new IntentFilter(CommandHandler.CH_SETTING_RECEIVED);
 		registerReceiver(mReceiver, filter);
-		
+
 	}
 
-	public void start_callback(View v)
+	private void SetupButtons()
 	{
-		if (mOnOffFlag)
+		// Setup buttons
+		Button TimeControllerButton = (Button) findViewById(R.id.main_xyTab);
+		TimeControllerButton.setOnClickListener(new View.OnClickListener()
 		{
-			mCommandHandler.AllOff();
-		}
+			public void onClick(View v)
+			{
+				xyTab = new Intent(getApplicationContext(), MLCoordView.class);
+				startActivity(xyTab);
+			}
+		});
 
-		else
+		Button ChannelSetupButton = (Button) findViewById(R.id.main_channels);
+		ChannelSetupButton.setOnClickListener(new View.OnClickListener()
 		{
-			mCommandHandler.AllOn();
-		}
+			public void onClick(View v)
+			{
+				Intent mIntent = new Intent(getApplicationContext(), ChannelOverview.class);
+				startActivity(mIntent);
+			}
+		});
 
-		mOnOffFlag = !mOnOffFlag;
-		mCommandHandler.GetCommandCounter();
+		Button DelayEditorButton = (Button) findViewById(R.id.main_sweepeditor);
+		DelayEditorButton.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				Intent mIntent = new Intent(getApplicationContext(), SweepEditor.class);
+				startActivity(mIntent);
+			}
+		});
+
+		Button SweepButton = (Button) findViewById(R.id.main_help);
+		SweepButton.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				// triggerAction(2, null);
+				int i = 0;
+				for (Channel ch : connectedLamp.channels)
+				{
+					ch.setDelay(i++ * 20);
+				}
+			}
+		});
+
+		Button ReadoutButton = (Button) findViewById(R.id.main_readout);
+		ReadoutButton.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				mCommandHandler.ReadOut();
+				connectedLamp.SaveData();
+			}
+		});
+
+		Button QuitButton = (Button) findViewById(R.id.main_quit);
+		QuitButton.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				// mCommandHandler.GetCommandCounter();
+				// mCommandHandler.ResetTimers();
+				connectedLamp.SetAllProperty(COMMANDS.CMD_SET_MODE, mOnOffFlag);
+				Log.i(TAG, "Flag is now: " + mOnOffFlag);
+				if (mOnOffFlag == MODE.Names.length - 1)
+				{
+					mOnOffFlag = 0;
+				}
+				else
+				{
+					mOnOffFlag++;
+				}
+
+			}
+		});
 	}
 
-	public void xyTab_callback(View v)
-	{
-		xyTab = new Intent(this, MLCoordView.class);
-		startActivity(xyTab);
-	}
-
-	public void help_callback(View v)
-	{
-		triggerAction(2, null);
-	}
-
-	public void quit_callback(View v)
-	{
-		triggerAction(3, null);
-	}
-
-	public void readout_callback(View v)
-	{
-		mCommandHandler.ReadOut();
-	}
-	
 	public void triggerAction(int actionID, Bundle extras)
 	{
 		if (actionID == 0)
@@ -397,13 +496,7 @@ public class MLStartupActivity extends Activity
 			byte[] setAllToSweep = { 0x00, 0x00, -1, -1, 0x04, 0x4, 0x0D, 0x0A };
 			mMLBluetoothService.sendMessage(setAllToSweep);
 		}
-		if (actionID == 3)
-		{
-			byte[] getCommandCounter = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x0D, 0x0A };
-			mMLBluetoothService.sendMessage(getCommandCounter);
-		}
 	}
-
 
 	// The Handler that gets information back from the MLBluetoothService
 	private final Handler mHandler = new Handler()
@@ -412,75 +505,69 @@ public class MLStartupActivity extends Activity
 		public void handleMessage(Message msg)
 		{
 			switch (msg.what)
-			{			
+			{
 			case MESSAGE_STATE_CHANGE:
 				int state = msg.arg1;
 				Log.i(TAG, "MESSAGE_STATE_CHANGE: " + state);
 				switch (state)
 				{
-				case MLBluetoothService.STATE_CONNECTED:
+				case BluetoothService.STATE_CONNECTED:
 					setOutputText(getResources().getString(R.string.connected));
+					try
+					{
+						Thread.sleep(200);
+					}
+					catch (InterruptedException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					mProgressDialog.dismiss();
 					break;
-				case MLBluetoothService.STATE_CONNECTING:
+				case BluetoothService.STATE_CONNECTING:
 					setOutputText(getResources().getString(R.string.not_connected));
 					break;
-				case MLBluetoothService.STATE_LISTEN:
-				case MLBluetoothService.STATE_NONE:
+				case BluetoothService.STATE_LISTEN:
+				case BluetoothService.STATE_NONE:
 					setOutputText(getResources().getString(R.string.none));
+					try
+					{
+						Thread.sleep(200);
+					}
+					catch (InterruptedException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					mProgressDialog.dismiss();
+					if (reconnectTask)
+					{
+						OpenBT();
+						reconnectTask = false;
+					}
 					break;
 				}
-				break;			
+				break;
 			case MESSAGE_WRITE:
-				byte[] writeBuf = (byte[]) msg.obj;
 				break;
 			}
 		}
 	};
 
-	private long byteToLong(byte[] array)
-	{
-		return byteToLong(array, false);
-	}
-
-	private long byteToLong(byte[] array, boolean MSBfirst)
-	{
-		long value = 0;
-		if (MSBfirst)
-		{
-			for (int i = 0; i < array.length; i++)
-			{
-				value += ((long) array[i] & 0xffL) << (8 * i);
-			}
-		} else
-		{
-			for (int i = 0; i < array.length; i++)
-			{
-				value |= (array[i] & 0xff) << (4 * (array.length - i - 1));
-				// value = (value << 8) + (array[i] & 0xff);
-			}
-
-		}
-		return value;
-	}
-
-
 	/** Sets some text to the output text line **/
-	public void setOutputText(String string)
+	private static void setOutputText(String string)
 	{
 		Log.d(TAG, string);
-		TextView outputText = (TextView) findViewById(R.id.outputText);
-		outputText.setText(string);
+		mOutputText.setText(string);
 	}
 
 	public void loadSettings()
 	{
 		mSettings = PreferenceManager.getDefaultSharedPreferences(this);
 		// TODO: this might be an android issue?!
-		numberOfChannels = Integer.parseInt(mSettings.getString(MLSettings.NUM_OF_CHANNELS, "10"));
-		mConnectAtStartup = mSettings.getBoolean(MLSettings.CONNECT_ON_STARTUP, false);
-		mDefaultDevice = mSettings.getString(MLSettings.DEFAULT_DEVICE, null);
+		connectedLamp.SetNumberOfChannels(Integer.parseInt(mSettings.getString(Settings.NUM_OF_CHANNELS, "10")));
+		mConnectAtStartup = mSettings.getBoolean(Settings.CONNECT_ON_STARTUP, false);
+		mDefaultDevice = mSettings.getString(Settings.DEFAULT_DEVICE, null);
 	}
 
 	public void setPref(String name, String value)
@@ -548,9 +635,9 @@ public class MLStartupActivity extends Activity
 			}
 			if (action.equals(BluetoothDevice.ACTION_FOUND))
 			{
-				
+
 			}
-			if (action.equals(MLErrorLog.READER_READY))
+			if (action.equals(ErrorView.READER_READY))
 			{
 				triggerAction(0, extras);
 			}
@@ -562,16 +649,22 @@ public class MLStartupActivity extends Activity
 			{
 				triggerAction(1, extras);
 			}
-			if(action.equals(CommandHandler.CH_SETTING_RECEIVED))
-			{
-				setupChannelTable(mChannelTable);
-			}
 		}
 	};
 
-	
-	public static MLBluetoothService getBluetoothService()
+	public static BluetoothService getBluetoothService()
 	{
 		return mMLBluetoothService;
 	}
+
+	public void OnAcknowledgeReceived()
+	{
+		setupChannelTable(mChannelTable);
+	}
+
+	public void ChannelPropertyChangeReceived(Channel ch, int channelProperty, int value)
+	{
+		mCommandHandler.SetChannelProptery(ch.ID, channelProperty, value);
+	}
+
 }

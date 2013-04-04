@@ -11,7 +11,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
-public class MLSettings extends PreferenceActivity implements OnSharedPreferenceChangeListener
+public class Settings extends PreferenceActivity implements OnSharedPreferenceChangeListener
 {
 
 	public static final String CONNECT_ON_STARTUP = "connect_at_startup";
@@ -56,7 +56,6 @@ public class MLSettings extends PreferenceActivity implements OnSharedPreference
 		mDeviceList.setSummary(globalSettings.getString(DEFAULT_DEVICE_NAME, "No device set yet"));
 	}
 
-	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
 	{
 		if (key.equals(CONNECT_ON_STARTUP))
