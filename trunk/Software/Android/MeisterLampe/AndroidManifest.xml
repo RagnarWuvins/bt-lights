@@ -4,27 +4,32 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
-    <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="10"/>
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="17" />
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <application
         android:icon="@drawable/icon"
-        android:label="@string/app_name" >
+        android:label="@string/app_name" 
+        android:theme="@android:style/Theme.Light.NoTitleBar">
         <activity
-            android:name=".MLStartupActivity"
+            android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
+            android:name=".ErrorView"
             android:exported="false"
-            android:name=".MLErrorLog"
             android:label="@string/title_activity_error_log"
             android:theme="@android:style/Theme.Dialog" >
             <intent-filter>
@@ -32,28 +37,24 @@
             </intent-filter>
         </activity>
         <activity
-            android:exported="false"
-            android:name=".MLCoordView"
-            android:label="@string/title_activity_mlcoord_view"
-            android:screenOrientation="landscape"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".MLSettings"
+            android:name=".Settings"
             android:label="@string/title_activity_mlsettings" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android.preference.PreferenceActivity" />
         </activity>
         <activity
+            android:name=".SweepEditor"
             android:exported="false"
-            android:name=".MLChannelSetup"
             android:label="@string/title_activity_mlchannel_setup"
-            android:theme="@style/ChannelSetup"  
-            android:screenOrientation="landscape">
+            android:theme="@style/ChannelSetup" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ChannelOverview"
+            android:label="@string/title_activity_channel_overview" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>

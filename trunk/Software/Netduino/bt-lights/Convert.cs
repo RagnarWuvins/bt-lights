@@ -22,6 +22,13 @@ namespace BTLights
             return output;
         }
 
+        public static byte[] SubArray(byte[] data, int index, int length)
+        {
+            byte[] result = new byte[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
+        }
+
         public static string ByteArrayToString(byte[] arr)
         {
             String output = "";
@@ -31,21 +38,21 @@ namespace BTLights
                 if (output != null)
                 {
                     output = output.Trim();
-                }                
+                }
             }
-            catch(UnknownTypeException e)
+            catch (UnknownTypeException e)
             {
-                MainProgram.THROW_ERROR(Constants.FW_ERRORS.CMD_ASSERT_FAIL);
-            }            
+                MainProgram.RegisterError(MainProgram.ErrorCodes.CommandAssertionFail);
+            }
             return output;
         }
 
         public static char[] ByteToChar(byte[] bytes)
         {
             char[] chars2 = new char[bytes.Length];
-            for (int i = 0; i < chars2.Length; i++) 
+            for (int i = 0; i < chars2.Length; i++)
             {
-               chars2[i] = (char) (bytes[i]);
+                chars2[i] = (char)(bytes[i]);
             }
             return chars2;
         }

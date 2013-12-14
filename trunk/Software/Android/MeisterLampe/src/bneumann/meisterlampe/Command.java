@@ -1,5 +1,9 @@
 package bneumann.meisterlampe;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import android.util.Log;
+
 public class Command
 {
 	public int cla;
@@ -24,6 +28,7 @@ public class Command
 	private static final int LOW_LIM = 0x03; // lowest possible limit in HW
 	private static final int LIGHT_ON = 0x02; // Maximum allowed value
 	private static final int LIGHT_OFF = 0x01; // Minimum allowed value
+	private static int ACKcounter = 0;
 	
 	/** Length of commands */
 	public static final int COMMAND_LENGTH = 0x08;
@@ -33,6 +38,22 @@ public class Command
 	public void splitCommand(byte[] command)
 	{
 		rawCommand = command;
+		String checkString;
+		try
+		{
+			checkString = new String(command, "UTF-8");
+			if (checkString.trim().equals("ACK"))
+			{
+				ACKcounter++;
+				Log.d("Command", "ACKs received: " + ACKcounter);
+				return;
+			}
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			e.printStackTrace();
+		}
+		Log.d("Command", "COMD received ");
 		cla = rawCommand[BYTE_CLA];
 		mode = rawCommand[BYTE_MOD];
 		address = ((rawCommand[BYTE_ADD_HIGH] << 8) + rawCommand[BYTE_ADD_LOW]) & 0xFFFF;

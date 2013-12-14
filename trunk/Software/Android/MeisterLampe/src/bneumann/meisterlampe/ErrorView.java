@@ -1,7 +1,17 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import bneumann.meisterlampe.CommandHandler.GLOBAL_COMMANDS;
+import bneumann.meisterlampe.CommandHandler.GlobalCommandReceivedListener;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.app.ListActivity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,13 +21,14 @@ import android.util.Log;
 import android.view.Menu;
 import android.widget.ArrayAdapter;
 
-public class MLErrorLog extends ListActivity
+public class ErrorView extends ListActivity implements GlobalCommandReceivedListener
 {
-	private ArrayList<String> value;
+	
 	private ArrayAdapter<String> adapter;
 	int clickCounter = 0;
 	protected String TAG = "ListActivity debug";
 	public static final String READER_READY = "awaiting_error_log";
+	private volatile ArrayList<int[]> mErrorLog;
 	private ArrayList<String> mErrorLogStrings;
 	private static final String[] ERRORS = { 
 								"Unknown command",
@@ -34,20 +45,67 @@ public class MLErrorLog extends ListActivity
 								};
 	private static final String NO_ERROR = "No errors happend ;)";	
 	
+	private Lamp connectedLamp;
+	private BluetoothService mMLBluetoothService;
+	private CommandHandler mCommandHandler;
+	private int mErrorCounter;
+	private ArrayList<int[]> mTempList;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		mErrorLogStrings = new ArrayList<String>();
-		IntentFilter filter = new IntentFilter(MLStartupActivity.NEW_LOG_ENTRY);
-		registerReceiver(mReceiver, filter);
+		mErrorLog = new ArrayList<int[]>();
+		connectedLamp = MainActivity.connectedLamp;
 		
 		mErrorLogStrings.add(NO_ERROR);
 		setContentView(R.layout.activity_error_log);
-		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mErrorLogStrings);
-		setListAdapter(adapter);		
+		adapter = new ArrayAdapter<String>(this, R.layout.errorlist, mErrorLogStrings);
+		setListAdapter(adapter);
+		mMLBluetoothService = MainActivity.getBluetoothService();
+		mCommandHandler = new CommandHandler(this, mMLBluetoothService);
+		mCommandHandler.AddGlobalCommandReceivedListener(this);
 	}
 
+	private void parseLog(ArrayList<int[]> errors)
+	{
+		adapter = new ArrayAdapter<String>(this, R.layout.errorlist, mErrorLogStrings);
+		setListAdapter(adapter);
+	}
+	
+	
+		
+	private class Error
+	{
+		public String errorName = "";
+		public String timeString = "";
+		public String counterString = "";
+		private Error(int[] values)
+		{
+			int time = values[1];
+			int error = values[0];
+			int counter = values[2];
+
+			int seconds = (int) (time % 60);
+			time /= 60;
+			int minutes = (int) (time % 60);
+			time /= 60;
+			int hours = (int) (time % 24);
+			this.timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+			this.counterString = String.format("%d", counter);
+			if (error < ERRORS.length)
+			{
+				this.errorName = ERRORS[error];
+			}
+			else
+			{
+				Log.e(TAG, "Unknown error occured, maybe unsupported hardware?");
+				this.errorName = String.format("%d", error);
+			}
+		}
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
@@ -61,7 +119,7 @@ public class MLErrorLog extends ListActivity
 		super.onStart();
 		// byte[] getErrorLog = { 0x13, -1, -1, 0x00, 0x13, 0x0D, 0x0A };
 		// MLStartupActivity.sendMessage(getErrorLog);	
-		MLStartupActivity.REQUEST_NUMBER = 3;
+		MainActivity.REQUEST_NUMBER = 3;
 		Intent i = new Intent();
 		i.setAction(READER_READY);
 		sendBroadcast(i);
@@ -78,46 +136,35 @@ public class MLErrorLog extends ListActivity
 	public void onDestroy()
 	{
 		super.onDestroy();
-		unregisterReceiver(mReceiver);
 		finish();
 
 	}
 
-	private final BroadcastReceiver mReceiver = new BroadcastReceiver()
+	public void OnCommandReceive(Command command)
 	{
-		@Override
-		public void onReceive(Context context, Intent intent)
+		if (command.mode == GLOBAL_COMMANDS.ERROR)
 		{
-			Log.i(TAG, "Broadcast received");
-			final String action = intent.getAction();
-
-			if (action.equals(MLStartupActivity.NEW_LOG_ENTRY))
-			{				
-				long[] extraBundle =  intent.getLongArrayExtra("EXTRA_ERROR_LOG");
-				long x = extraBundle[1];
-				int seconds = (int) (x % 60);
-			    x /= 60;
-			    int minutes = (int) (x % 60);
-			    x /= 60;
-			    int hours = (int) (x % 24);
-				String time = String.format( "%02d:%02d:%02d.", hours, minutes, seconds ); 
-				String errorName = "";
-				if (extraBundle[0] < ERRORS.length)
-				{
-					errorName = ERRORS[(int) extraBundle[0]];
-				}
-				else
-				{
-					Log.e(TAG, "Unknown error occured, maybe unsupported hardware?");
-					errorName = String.format("%d", extraBundle[0]);
-				}
-				mErrorLogStrings.remove(NO_ERROR);
-				mErrorLogStrings.add("Error: " + errorName + " occured at " + time); 
-				adapter = new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, mErrorLogStrings);
-				setListAdapter(adapter);
+			mErrorCounter++;
+			mErrorLog.add(new int[]{command.errorNum, command.errorTime, mErrorCounter});
+			// copy the list to make it thread save
+			mTempList = new ArrayList<int[]>();			
+			mErrorLogStrings = new ArrayList<String>();
+			for(int[] entry : mErrorLog)
+			{
+				mTempList.add(entry);
+				Error er = new Error(entry);
+				mErrorLogStrings.add(String.format("[%s][%s] %s", er.counterString, er.timeString, er.errorName)); 
 			}
-		}
-
-	};
-
+			
+			Handler refresh = new Handler(Looper.getMainLooper());
+			refresh.post(new Runnable()
+			{
+				public void run()
+				{					
+					parseLog(mTempList);					
+				}	
+			});
+			
+		}		
+	}
 }

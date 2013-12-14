@@ -13,7 +13,7 @@ import android.view.View.OnTouchListener;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-public class MLCoordView extends Activity implements OnTouchListener
+public class CoordView extends Activity implements OnTouchListener
 {
 
 	public static final String XY_CHANNEL = "xyChannel";

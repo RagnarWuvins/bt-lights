@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/rot_background"
+        android:drawable="@drawable/rotate_background"/>
+    <item
+        android:drawable="@drawable/img_power"
+        android:left="30dp"
+        android:bottom="30dp"/>
+
+</layer-list>

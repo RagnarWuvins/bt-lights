@@ -18,6 +18,7 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
 	public static final String NUM_OF_CHANNELS = "num_of_channels";
 	public static final String DEFAULT_DEVICE = "default_device";
 	public static final String DEFAULT_DEVICE_NAME = "default_device_name";
+	public static final String FIRST_TIME_STARTUP = "first_time_start";
 
 	private ListPreference mDeviceList;
 	private CharSequence[] mEntries;

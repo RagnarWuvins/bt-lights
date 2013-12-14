@@ -1,71 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res/bneumann.meisterlampe"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/LinearLayout1"
     android:layout_width="fill_parent"
-    android:layout_height="match_parent" >
-
-    <LinearLayout
-        android:id="@+id/LinearLayout1"
+    android:layout_height="fill_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    tools:context=".MainActivity" >
+
+    <bneumann.meisterlampe.FunctionWheel
+        android:id="@+id/FunctionWheel"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
+        android:layout_height="0dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"
+        android:background="#FFFFFF" >
 
-        <Button
-            android:id="@+id/main_start"
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionModeSelector"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="start_callback"
-            android:text="@string/main_start" />
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            custom:horizontalPosition="left"
+            custom:image="func"
+            custom:verticalPosition="top" />
 
-        <Button
-            android:id="@+id/main_help"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="help_callback"
-            android:text="@string/main_help" />
-
-        <Button
-            android:id="@+id/main_xyTab"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="xyTab_callback"
-            android:text="@string/main_xyTab" />
-
-        <Button
-            android:id="@+id/main_readout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="readout_callback"
-            android:text="@string/main_readout" />
-        
-        <Button
-            android:id="@+id/main_quit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="quit_callback"
-            android:text="@string/main_quit" />
-
-        <TextView
-            android:id="@+id/outputText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:text="@string/app_name"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
-
-        <TableLayout
-            android:id="@+id/channelTable"
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionLevel"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:stretchColumns="0,1"
-            >
-           
-        </TableLayout>
+            android:layout_weight="1"
+            custom:horizontalPosition="right"
+            custom:image="level"
+            custom:verticalPosition="top" />
 
-    </LinearLayout>
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionPower"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            custom:horizontalPosition="left"
+            custom:image="power"
+            custom:verticalPosition="bottom" />
 
-</ScrollView>
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionSettings"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            custom:horizontalPosition="right"
+            custom:image="settings"
+            custom:verticalPosition="bottom" />
+    </bneumann.meisterlampe.FunctionWheel>
+
+    <bneumann.meisterlampe.SubButton
+        android:id="@+id/SettingsButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"
+        android:onClick="onConnectClick"
+        android:text="@string/setup_string"
+        android:textColor="@color/standardText"
+        custom:fontSize="40"
+        custom:fontType="Angelic Serif.ttf" />
+
+</LinearLayout>

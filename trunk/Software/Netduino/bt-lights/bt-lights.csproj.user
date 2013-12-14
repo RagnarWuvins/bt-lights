@@ -5,7 +5,7 @@
     <DeployDevice>Netduino</DeployDevice>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <DeployTransport>USB</DeployTransport>
-    <DeployDevice>Netduino</DeployDevice>
+    <DeployTransport>Emulator</DeployTransport>
+    <DeployDevice>{%24GUID2%24}</DeployDevice>
   </PropertyGroup>
 </Project>

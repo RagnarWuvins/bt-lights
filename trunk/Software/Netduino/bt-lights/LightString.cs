@@ -7,8 +7,8 @@ namespace BTLights
     public class LightString
     {
         //TODO: constants for default values
-        public byte channel;
-        public int timerPeriod = 50, timerDelay = 0, dimState = Constants.LIM_LOW, functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;
+        public byte mChannelID;
+        public int timerPeriod = 50, timerDelay = 0, dimState = MAX6966.PortLimitLow, functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;
         public byte upperLimit
         {
             get { return _upperLimit; }
@@ -18,9 +18,9 @@ namespace BTLights
                 {
                     _upperLimit = _lowerLimit;
                 }
-                if (value >= Constants.LIM_HIGH)
+                if (value >= MAX6966.PortLimitHigh)
                 {
-                    _upperLimit = Constants.LIM_HIGH;
+                    _upperLimit = MAX6966.PortLimitHigh;
                 }
                 else
                 {
@@ -37,9 +37,9 @@ namespace BTLights
                 {
                     _lowerLimit = _upperLimit;
                 }
-                if (value <= Constants.LIM_LOW)
+                if (value <= MAX6966.PortLimitLow)
                 {
-                    _lowerLimit = Constants.LIM_LOW;
+                    _lowerLimit = MAX6966.PortLimitLow;
                 }
                 else
                 {
@@ -51,64 +51,29 @@ namespace BTLights
         public double offset = 6.0;
 
         private int _mode = (int)Constants.MODE.FUNC, _lastMode = (int)Constants.MODE.NOOP,
-            _Value = Constants.LIM_LOW, _lastValue = Constants.LIM_LOW;        
-        private byte _lowerLimit = Constants.LIM_LOW, _upperLimit = Constants.LIM_HIGH;
+            mValue = MAX6966.PortLimitLow, _lastValue = MAX6966.PortLimitLow;
+        private byte _lowerLimit = MAX6966.PortLimitLow, _upperLimit = MAX6966.PortLimitHigh;
         private bool _dimDir = true;
         private byte[] writeBuffer;
         private byte[] readBuffer = new byte[2];
-        private SPI _SPIBus;
+        private MAX6966 mMax6966;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="SPIBus">SPI Bus to transmit to</param>
-        /// <param name="channel">Number of channel to send</param>
-        public LightString(SPI SPIBus, int channel)
+        /// <param name="mChannelID">Number of mChannelID to send</param>
+        public LightString(MAX6966 SPIBus, int channel)
         {
-            this._SPIBus = SPIBus;
-            this.channel = (byte)channel;
+            this.mMax6966 = SPIBus;
+            this.mChannelID = (byte)channel;
+        } 
 
-            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), (byte)(Constants.CONF_RUN | Constants.CONF_STAGGER) };
-            _SPIBus.Write(writeBuffer);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="SPIBus">SPI Bus to transmit to</param>
-        /// <param name="channel">Number of channel to send</param>
-        /// <param name="timerDelay">Delay of timer in ms</param>
-        public LightString(SPI SPIBus, int channel, int timerDelay)
-        {
-            this._SPIBus = SPIBus;
-            this.channel = (byte)channel;
-            this.timerDelay = timerDelay;
-
-            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
-            _SPIBus.Write(writeBuffer);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="SPIBus">SPI Bus to transmit to</param>
-        /// <param name="channel">Number of channel to send</param>
-        /// <param name="timerDelay">Delay of timer in ms</param>
-        /// <param name="timerPeriod">Timer period in ms</param>
-        public LightString(SPI SPIBus, int channel, int timerDelay, int timerPeriod)
-        {
-            this._SPIBus = SPIBus;
-            this.channel = (byte)channel;
-            this.timerDelay = timerDelay;
-            this.timerPeriod = timerPeriod;
-
-            writeBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN };
-            _SPIBus.Write(writeBuffer);
-        }
-
-        // reset channel
+        // reset mChannelID
         public void Clear()
         {
             this.timerDelay = 0;
             this.timerPeriod = 50;
-            this.dimState = Constants.LIM_LOW;
+            this.dimState = MAX6966.PortLimitLow;
             this.functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;       
             this.rise = 6.0;
             this.offset = 6.0;
@@ -145,7 +110,7 @@ namespace BTLights
                             Saw_rev(_lowerLimit, _upperLimit);
                             break;
                         default:
-                            MainProgram.THROW_ERROR(Constants.FW_ERRORS.WRONG_FUNCTION_POINTER);
+                            MainProgram.RegisterError(MainProgram.ErrorCodes.WrongFunction);
                             functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;             
                             break;
                     }
@@ -162,41 +127,36 @@ namespace BTLights
 
         public void SetDirect()
         {
-            writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value};
-            _SPIBus.Write(writeBuffer);
-            //_mode = _lastMode;
+            mMax6966.SetPortValue(this.mChannelID, this.mValue);
         }
 
         // set to on (cannot be set by Value variable, because out of range!)
         public void On()
         {
-            writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_ON };
-            _SPIBus.Write(writeBuffer);
+            mMax6966.SetPortOn(this.mChannelID);
         }
 
         // set to off  (cannot be set by Value variable, because out of range!)
         public void Off()
         {
-            writeBuffer = new byte[] { Constants.Write((byte)channel), Constants.LIGHT_OFF };
-            _SPIBus.Write(writeBuffer);
+            mMax6966.SetPortOff(this.mChannelID);
         }
     
         // set to any value
         public int Value
         {
-            get { return _Value; }
+            get { return mValue; }
             set
             {
-                _lastValue = _Value;
-                _Value = value > upperLimit ? upperLimit : value;
-                _Value = value < lowerLimit ? lowerLimit : value;
+                _lastValue = mValue;
+                mValue = value > upperLimit ? upperLimit : value;
+                mValue = value < lowerLimit ? lowerLimit : value;
                 int channelDissapation = (_lastValue - Value) >= 0 ? (_lastValue - Value) : -(_lastValue - Value);
                 if (channelDissapation > Constants.MAX_CHANNEL_DISSAPATION)
                 {
-                    MainProgram.THROW_ERROR(Constants.FW_ERRORS.CHANNEL_VALUE_ASSERT);
+                    MainProgram.RegisterError(MainProgram.ErrorCodes.CHANNEL_VALUE_ASSERT);
                 }
-                writeBuffer = new byte[] { Constants.Write((byte)channel), (byte)_Value };
-                _SPIBus.Write(writeBuffer);
+                mMax6966.SetPortValue(this.mChannelID, this.mValue);
             }
 
         }

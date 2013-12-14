@@ -8,8 +8,9 @@
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9A7018F4-10F5-43CD-958F-4B4075668FC6}</ProjectGuid>
-    <TargetFrameworkVersion>v4.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.2</TargetFrameworkVersion>
     <NetMfTargetsBaseDir Condition="'$(NetMfTargetsBaseDir)'==''">$(MSBuildExtensionsPath32)\Microsoft\.NET Micro Framework\</NetMfTargetsBaseDir>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -42,14 +43,22 @@
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>BTLights.MainProgram</StartupObject>
+  </PropertyGroup>
   <Import Project="$(NetMfTargetsBaseDir)$(TargetFrameworkVersion)\CSharp.Targets" />
   <ItemGroup>
     <Compile Include="BTEventArgs.cs" />
+    <Compile Include="BTM222.cs" />
     <Compile Include="BTModule.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Convert.cs" />
+    <Compile Include="Frame.cs" />
+    <Compile Include="Header.cs" />
     <Compile Include="LightString.cs" />
     <Compile Include="LightStringCollection.cs" />
+    <Compile Include="MAX6966.cs" />
+    <Compile Include="Package.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MainProgram.cs" />
     <Compile Include="CommandHandler.cs" />

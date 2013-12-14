@@ -4,13 +4,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import bneumann.meisterlampe.BluetoothService.DataReceivedListener;
 import bneumann.meisterlampe.Lamp.Channel;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-public class CommandHandler
+public class CommandHandler implements DataReceivedListener
 {
 	// Define our custom Listener interface
 	public interface ChannelCommandReceivedListener
@@ -103,6 +104,7 @@ public class CommandHandler
 		public static final int GET_VERSION = 0x07;
 		/** Reset the BT module only */
 		public static final int RESET_BT = 0x08;
+		public static final String[] Names = new String[]{"GET_CC", "RESET_CC", "CPU", "ERROR", "RESET_ALL", "RESET_SYSTE", "GET_SYS_TIME", "GET_VERSION", "RESET_BT"};
 	}
 	
 	private final int[] mGlGetter = {GLOBAL_COMMANDS.GET_SYS_TIME, GLOBAL_COMMANDS.GET_VERSION};
@@ -171,11 +173,11 @@ public class CommandHandler
 		mGlobalListener = new ArrayList<GlobalCommandReceivedListener>();
 		mWriteQueue = new ArrayList<byte[]>();
 		command = new Command();
-		mbtService = btService;
 		mContext = context;
+		mbtService = btService;		
 		if (btService != null)
 		{
-			mbtService.AddHandler(mHandler);
+			mbtService.AddDataReceivedListener(this);
 		}
 		Functions = new String[] { context.getResources().getString(R.string.func_sweeping), context.getResources().getString(R.string.func_fading_in),
 				context.getResources().getString(R.string.func_fading_out), };
@@ -275,7 +277,7 @@ public class CommandHandler
 
 	private byte[] createCommand(int cla, int mode, int address, int value)
 	{
-		Log.d(TAG, "Sending command: [Class: " + CLASS.Names[cla] + " Command: " + COMMANDS.Names[mode] + " Address: " + address + " Value: " + value + "]");
+		Log.d(TAG, "Sending command: [Class: " + CLASS.Names[cla] + " Command: " + ((cla == 0) ? COMMANDS.Names[mode] : GLOBAL_COMMANDS.Names[mode]) + " Address: " + address + " Value: " + value + "]");
 		byte claB = (byte)cla;
 		byte mod = (byte)mode;
 		byte chanHigh = (byte) ((address & 0xFF00) >> 0x08);
@@ -324,40 +326,32 @@ public class CommandHandler
 	}
 
 	// The Handler that gets information back from the MLBluetoothService
-	private final Handler mHandler = new Handler()
+	public void OnDataReceive(byte[] incomingCommand)
 	{
-		@Override
-		public void handleMessage(Message msg)
+		command.splitCommand(incomingCommand);
+		switch (command.cla)
 		{
-			switch (msg.what)
+		case CLASS.CLA_CHANNEL:
+			for (ChannelCommandReceivedListener listener : mChannelListener)
 			{
-			case MainActivity.MESSAGE_READ:
-				mReadBuffer = (byte[]) msg.obj;				
-				command.splitCommand(mReadBuffer);
-				switch (command.cla)
-				{
-				case CLASS.CLA_CHANNEL:					
-					for (ChannelCommandReceivedListener listener : mChannelListener) 
-					{
-					    listener.OnCommandReceive(command.mode, command.addressInteger, command.value);
-					}
-					break;
-				case CLASS.CLA_GLOBAL:
-					for (GlobalCommandReceivedListener listener : mGlobalListener) 
-					{
-					    listener.OnCommandReceive(command);
-					}
-					break;
-				case CLASS.CLA_DIRECT:
-					break;
-				case CLASS.CLA_AT:
-					break;
-				default:
-					break;
-				}
-				break;
+				listener.OnCommandReceive(command.mode, command.addressInteger, command.value);
 			}
+			break;
+		case CLASS.CLA_GLOBAL:
+			for (GlobalCommandReceivedListener listener : mGlobalListener)
+			{
+				listener.OnCommandReceive(command);
+			}
+			break;
+		case CLASS.CLA_DIRECT:
+			break;
+		case CLASS.CLA_AT:
+			break;
+		default:
+			break;
 		}
-	};
+	}
+		
+	
 
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="MainButton">
+        <attr name="horizontalPosition" format="enum">
+            <enum name="left" value="0" />
+            <enum name="right" value="2" />
+        </attr>
+        <attr name="verticalPosition" format="enum">
+            <enum name="top" value="0" />
+            <enum name="bottom" value="1" />
+        </attr>
+        <attr name="image" format="enum">
+            <enum name="func" value="0" />
+            <enum name="power" value="1" />
+            <enum name="settings" value="2" />
+            <enum name="level" value="3" />
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="SubButton">
+        <attr name="fontType" format="string" />
+        <attr name="fontSize" format="integer" />
+    </declare-styleable>
+
+</resources>

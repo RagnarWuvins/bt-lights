@@ -25,6 +25,12 @@ namespace BTLights
         {
         }
 
+        public void Restart()
+        {
+            m_startTicks = Microsoft.SPOT.Hardware.Utility.GetMachineTime().Ticks;
+            m_stopTicks = 0;
+        }
+
         public void Reset()
         {
             m_startTicks = 0;
@@ -66,7 +72,7 @@ namespace BTLights
                 }
                 else
                 {
-                throw new InvalidOperationException();
+                    return -1;
                 }
             }
         }

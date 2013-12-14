@@ -2,10 +2,13 @@
 <resources>
 
     <string name="app_name">Meister Lampe</string>
-    <string name="main_start">Start</string>
-    <string name="main_help">Help</string>
+    <string name="main_channels">Channel Setup</string>
+    <string name="main_help">Set to Sweep</string>
     <string name="main_xyTab">Time Controller</string>
     <string name="main_quit">Quit</string>
+    <string name="sweepeditor">Sweep Editor</string>
+    <string name="se_restartsweep">Restart Sweep</string>
+    <string name="se_moveall">Move all</string>
     <string name="not_connected">Status: not connected</string>
     <string name="connected">Status: connected</string>
     <string name="connecting">Status: connecting</string>
@@ -31,5 +34,9 @@
     <string name="getting_channel_values">Getting channel values</string>
     <string name="channel_number">Channel number</string>
     <string name="main_readout">Readout Lamp</string>
+    <string name="title_activity_channel_overview">ChannelOverview</string>
+    <string name="no_bluetooth">This device does not support bluetooth!</string>
+    <string name="connect_first_time">You are connecting the first time, setup your light first.</string>
+    <string name="setup_string">~ connect ~</string>
 
 </resources>

@@ -11,19 +11,20 @@ using System.IO.Ports;
 using System.Threading;
 using GraphLib;
 using System.IO;
+using System.Diagnostics;
 
 namespace BluetoothLights
 {
     public partial class controller : Form
     {
-        private static string[] _toolButtonDesc = {"Plot channel values", "Generate XML for Android", "Clear output", "Stress Test"};
+        private static string[] _toolButtonDesc = { "Plot channel values", "Generate XML for Android", "Clear output", "Stress Test" };
 
         private CheckBox[] _checkBoxes = new CheckBox[Constants.G_MAX_CHANNELS];
         private Button[] _cmdButtons = new Button[(int)Constants.COMMAND.CMD_NUM];
         private Button[] _gCmdButtons = new Button[(int)Constants.GLOBAL_COMMAND.CMD_NUM];
         private TrackBar _valueBar = new TrackBar();
         private NumericUpDown _textBox = new NumericUpDown();
-        private static TextBox _output = new TextBox();        
+        private static TextBox _output = new TextBox();
         private Button[] _toolButtons = new Button[_toolButtonDesc.Length];
         private static bool _childrenRunning = false;
 
@@ -35,22 +36,25 @@ namespace BluetoothLights
         private static int _elementNum = 0;
         private static int _outputHeight = 100;
 
-        private static int[] _allElements = {Constants.G_MAX_CHANNELS, (int)Constants.COMMAND.CMD_NUM, (int)Constants.GLOBAL_COMMAND.CMD_NUM};
+        private static int[] _allElements = { Constants.G_MAX_CHANNELS, (int)Constants.COMMAND.CMD_NUM, (int)Constants.GLOBAL_COMMAND.CMD_NUM };
         private static int _sliderYPos = functions.GetMax(_allElements);
-        private static int _sliderWidth = 2 * _margin + 2 * _bWidth + _cbWidth;        
+        private static int _sliderWidth = 2 * _margin + 2 * _bWidth + _cbWidth;
         private static int _width = _sliderWidth + 4 * _margin;
         private static int _height = 850;
 
         private static int _cla = 0;
-        private static int _mode = 0;        
+        private static int _mode = 0;
         private static int _address = 0;
         private static int _value = 0;
         private static SerialPort _srl;
         static int entryCounter = 0;
+        private volatile bool GetCCReceived = false;
+        private Stopwatch mStopWatch;
+        private int mValue;
 
         public controller()
         {
-            InitializeComponent();            
+            InitializeComponent();
 
             connectComBox.Items.AddRange(SerialPort.GetPortNames());
             connectComBox.SelectedItem = Properties.Settings.Default.lastPort;
@@ -62,7 +66,7 @@ namespace BluetoothLights
             _srl.NewLine = "\r\n";
             _srl.DataReceived += new SerialDataReceivedEventHandler(_dataReceived);
 
-            for (int channelCounter = 0; channelCounter < _checkBoxes.Length; channelCounter++ )
+            for (int channelCounter = 0; channelCounter < _checkBoxes.Length; channelCounter++)
             {
                 CheckBox cb = _checkBoxes[channelCounter];
                 cb = new CheckBox();
@@ -80,7 +84,7 @@ namespace BluetoothLights
 
             string[] CommandTexts = Enum.GetNames(typeof(Constants.COMMAND));
             for (int buttonCounter = 0; buttonCounter < _cmdButtons.Length; buttonCounter++)
-            {                
+            {
 
                 Button bt = _cmdButtons[buttonCounter];
                 bt = new Button();
@@ -117,7 +121,7 @@ namespace BluetoothLights
             _valueBar.Name = "_valueBar";
             _valueBar.Size = new Size(_sliderWidth, _bHeight);
             _valueBar.Maximum = 255;
-            _valueBar.Minimum = 0;            
+            _valueBar.Minimum = 0;
             _valueBar.ValueChanged += new EventHandler(_valueBar_Change);
             this.Controls.Add(_valueBar);
             _elementNum++;
@@ -165,7 +169,7 @@ namespace BluetoothLights
             _childrenRunning = false;
         }
 
-        private static void _tb_Click(object sender, EventArgs e)
+        private void _tb_Click(object sender, EventArgs e)
         {
             Button tb = (Button)sender;
             debugOut(tb.Text);
@@ -173,7 +177,7 @@ namespace BluetoothLights
             {
                 case "tb0":
                     _childrenRunning = true;
-                    plotter pl = new plotter(_srl);                    
+                    plotter pl = new plotter(_srl);
                     pl.FormClosed += new FormClosedEventHandler(_childClosed);
                     pl.Show();
                     break;
@@ -187,30 +191,54 @@ namespace BluetoothLights
                     _output.Clear();
                     break;
                 case "tb3":
-                    _srl.DataReceived -= new SerialDataReceivedEventHandler(_dataReceived);
-                    long startTime = DateTime.Now.Millisecond;
+                    this.GetCCReceived = false;
+                    mStopWatch = new Stopwatch();
+                    mStopWatch.Start();
                     // Clear counter
                     _mode = (int)Constants.GLOBAL_COMMAND.CMD_RESET_CC;
                     _cla = (int)Constants.CLASS.GC_CMD;
                     _sendData();
+                    Thread.Sleep(100);
                     // Send 100 commands
-                    for (int i = 0; i < 100; i++)
-                    {
-                        _mode = (int)Constants.GLOBAL_COMMAND.CMD_GET_CC;
-                        _cla = (int)Constants.CLASS.GC_CMD;
-                        byte[] cmd = _sendData();
-                        debugOut(String.Format("Command: {0} at {1}\n", BitConverter.ToString(cmd), DateTime.Now.Millisecond), true);
-                        Thread.Sleep(20);
-                    }
-                    long endTime = DateTime.Now.Millisecond - startTime;
-                    debugOut(String.Format("Sending 100 commands took: {0} ms\n", endTime), true);
-                    _srl.DiscardInBuffer();
-                    Thread.Sleep(1000);
-                    _srl.DataReceived += new SerialDataReceivedEventHandler(_dataReceived);
+                    ThreadStart ts = new ThreadStart(stressSender);
+                    Thread t = new Thread(ts);
+                    t.Start();
                     break;
                 default:
                     break;
             }
+        }
+
+        private void stressSender()
+        {
+            Stopwatch totalWatch = new Stopwatch();
+            totalWatch.Start();
+            bool success = true;
+            for (int i = 0; i < 100; i++)
+            {
+                mStopWatch.Restart();
+                _srl.DiscardInBuffer();
+                _mode = (int)Constants.GLOBAL_COMMAND.CMD_GET_CC;
+                _cla = (int)Constants.CLASS.GC_CMD;
+                byte[] cmd = _sendData();
+                while (!this.GetCCReceived)
+                {
+                    if (mStopWatch.ElapsedMilliseconds > 1000)
+                    {
+                        debugOut(String.Format("No answer received after: {0}\n", mStopWatch.ElapsedMilliseconds), true);
+                        return;
+                    }
+                }
+                success &= (this.mValue == i + 1);
+                this.GetCCReceived = false;
+                debugOut(String.Format("Command: {0} at {1}\n", BitConverter.ToString(cmd), mStopWatch.ElapsedMilliseconds), true);
+            }
+            mStopWatch.Stop();
+            totalWatch.Stop();
+            long endTime = totalWatch.ElapsedMilliseconds;
+            debugOut(String.Format("Sending 100 commands took: {0} ms\nAverage time: {1}ms\n", endTime, endTime / 100), true);
+            debugOut(String.Format("Test success: {0}\n", success), true);
+            _srl.DiscardInBuffer();
         }
 
         private static void _cmdButton_Click(object sender, EventArgs e)
@@ -260,121 +288,114 @@ namespace BluetoothLights
             _valueBar.Value = _value;
             _sendData();
         }
-
-        private static void _dataReceived(object sender, EventArgs e)
+        private void _dataReceived(object sender, EventArgs e)
         {
             if (_childrenRunning)
             {
                 return;
             }
             SerialPort srl = (SerialPort)sender;
-            if (srl.BytesToRead < Constants.C_LENGTH)
+            while (srl.BytesToRead > 0)
             {
-                return;
-            }
-            string debugString = "";
-            switch (_cla)
-            {
-                    // these are the channel commands
-                case (int)Constants.CLASS.CC_CMD:
-                    byte[] currentBuffer = new Byte[Constants.C_LENGTH];
-                    srl.Read(currentBuffer, 0, Constants.C_LENGTH);
-                    int cla = currentBuffer[0];
-                    int mode = currentBuffer[1];
-                    int address = currentBuffer[2] << 8 | currentBuffer[3];
-                    int value = currentBuffer[4];
-                    int crc = currentBuffer[0] + currentBuffer[4];
-                    if (crc == currentBuffer[5] | (crc - 0x100) == currentBuffer[5])
+                string input = srl.ReadLine();
+                if (input == "ACK")
+                {
+                    Debug.Print("ACK Received");
+                }
+                else
+                {
+                    byte[] currentBuffer = ASCIIEncoding.UTF8.GetBytes(input);
+                    string debugString = "";
+                    switch (_cla)
                     {
-                        debugString = String.Format("Class:\t\t{0}\nMode:\t\t{1}\nAddress:\t0x{2:X4}\nValue:\t\t{3}\n\n", cla, mode, address, value);
-                    }
-                    else
-                    {
-                        debugString = "CRC Error!";
-                    }
-                    debugOut(debugString);
-                    break;
-                // these are the global commands
-                case (int)Constants.CLASS.GC_CMD:                    
-                    while (srl.BytesToRead > 0)
-                    {
-                        if (srl.BytesToRead < Constants.C_LENGTH)
-                        {
-                            continue;
-                        }
-                        string input = srl.ReadLine();
-                        byte[] test = ASCIIEncoding.UTF8.GetBytes(input);
-                        cla = test[0];
-                        mode = test[1];
-                        address = test[2] << 8 | test[3];
-                        value = test[4];
-                        crc = test[0] + test[4];
-                        if (!(crc == test[5] | (crc - 0x100) == test[5]))
-                        {
-                            debugString = "CRC Error!";
-                        }
-                        if (test.Length < Constants.C_LENGTH - 2)
-                        {
-                            //debugOut("End of log doesn't match line number",  true);
-                            continue;
-                        }
-                        // if the command was firmware error tracing:
-                        if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_ERROR)
-                        {
-                            uint sysTime = 0;
-                            uint fwError = 0;
-                            // stupig BitConverter uses revers endianism :/
-                            uint errorEntry = BitConverter.ToUInt32(new byte[] {test[5], test[4], test[3], test[2]}, 0);
-                            sysTime = (errorEntry & 0x00FFFFFF);
-                            fwError = (errorEntry & 0xFF000000) >> 24;
-                            int min = (int)sysTime / 60;
-                            int hours = (int)min / 60;
-                            int sec = (int)sysTime - (hours * 3600 + min * 60);
-                            String erDesc = _int2enum((int)fwError, typeof(Constants.FW_ERRORS));
-                            String formatString = "{0}\t\t{1}:{2}:{3}\t{4}\n";
-                            if (erDesc.Length > 12)
+                        // these are the channel commands
+                        case (int)Constants.CLASS.CC_CMD:
+                            int cla = currentBuffer[0];
+                            int mode = currentBuffer[1];
+                            int address = currentBuffer[2] << 8 | currentBuffer[3];
+                            int value = currentBuffer[4];
+                            int crc = currentBuffer[0] + currentBuffer[4];
+                            if (crc == currentBuffer[5] | (crc - 0x100) == currentBuffer[5])
                             {
-                                formatString = "{0}\t{1}:{2}:{3}\t{4}\n";
+                                debugString = String.Format("Class:\t\t{0}\nMode:\t\t{1}\nAddress:\t0x{2:X4}\nValue:\t\t{3}\n\n", cla, mode, address, value);
                             }
-                            debugOut(String.Format(formatString, erDesc, hours, min, sec, entryCounter), true);
-                            entryCounter++;
-                        }
-                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CC)
-                        {
-                            debugOut(String.Format("Command Counter: {0}", value),false);
-                        }
-                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CMD_TIME)
-                        {
-                            debugOut(String.Format("Command Time: {0}", (test[3] << 16) | (test[4] << 8) | test[5]), false);
-                        }
-                        else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION)
-                        {
-                            debugOut(String.Format("Version: {0}.{1}", value >> 4, value & 0xF), false);
-                        }
-                        else
-                        {
-                            int pos = 32;
-                            int result = 0;
-                            foreach (byte by in test)
+                            else
                             {
-                                result |= (by << pos);
-                                pos -= 8;
+                                debugString = "CRC Error!";
                             }
-                            debugOut(result.ToString() + "\n", true);
-                        }
+                            debugOut(debugString);
+                            break;
+                        // these are the global commands
+                        case (int)Constants.CLASS.GC_CMD:
+                                cla = currentBuffer[0];
+                                mode = currentBuffer[1];
+                                address = currentBuffer[2] << 8 | currentBuffer[3];
+                                value = currentBuffer[4];
+                                crc = currentBuffer[0] + currentBuffer[4];
+                                if (!(crc == currentBuffer[5] | (crc - 0x100) == currentBuffer[5]))
+                                {
+                                    debugString = "CRC Error!";
+                                }
+                                // if the command was firmware error tracing:
+                                if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_ERROR)
+                                {
+                                    uint sysTime = 0;
+                                    uint fwError = 0;
+                                    // stupig BitConverter uses revers endianism :/
+                                    uint errorEntry = BitConverter.ToUInt32(new byte[] { currentBuffer[5], currentBuffer[4], currentBuffer[3], currentBuffer[2] }, 0);
+                                    sysTime = (errorEntry & 0x00FFFFFF);
+                                    fwError = (errorEntry & 0xFF000000) >> 24;
+                                    int min = (int)sysTime / 60;
+                                    int hours = (int)min / 60;
+                                    int sec = (int)sysTime - (hours * 3600 + min * 60);
+                                    String erDesc = _int2enum((int)fwError, typeof(Constants.FW_ERRORS));
+                                    String formatString = "{0}\t\t{1}:{2}:{3}\t{4}\n";
+                                    if (erDesc.Length > 12)
+                                    {
+                                        formatString = "{0}\t{1}:{2}:{3}\t{4}\n";
+                                    }
+                                    debugOut(String.Format(formatString, erDesc, hours, min, sec, entryCounter), true);
+                                    entryCounter++;
+                                }
+                                else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CC)
+                                {
+                                    this.GetCCReceived = true;
+                                    this.mValue = value;
+                                    debugOut(String.Format("Command Counter: {0}\n", value), true);
+                                }
+                                else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_CMD_TIME)
+                                {
+                                    debugOut(String.Format("Command Time: {0}", (currentBuffer[3] << 16) | (currentBuffer[4] << 8) | currentBuffer[5]), false);
+                                }
+                                else if (_mode == (int)Constants.GLOBAL_COMMAND.CMD_GET_VERSION)
+                                {
+                                    debugOut(String.Format("Version: {0}.{1}", value >> 4, value & 0xF), false);
+                                }
+                                else
+                                {
+                                    int pos = 32;
+                                    int result = 0;
+                                    foreach (byte by in currentBuffer)
+                                    {
+                                        result |= (by << pos);
+                                        pos -= 8;
+                                    }
+                                    debugOut(result.ToString() + "\n", true);
+                                }                            
+                            break;
+                        default:
+                            debugOut(srl.ReadLine(), true);
+                            break;
                     }
-                    break;
-                default:
-                    debugOut(srl.ReadLine(), true);
-                    break;
+                }
             }
-            
         }
+        
 
         private static byte[] _sendData()
         {
             byte _class = (byte)_cla;
-            byte _mod = (byte)_mode;            
+            byte _mod = (byte)_mode;
             byte _address_higher = (byte)((_address & 0xFF00) >> 8);
             byte _adress_lower = (byte)(_address & 0x00FF);
             byte _crc = (byte)(_cla + _value);
@@ -391,7 +412,7 @@ namespace BluetoothLights
             {
                 output = (int)Enum.Parse(typeof(Constants.COMMAND), text, true);
             }
-            else if(Enum.IsDefined(typeof(Constants.GLOBAL_COMMAND), text))
+            else if (Enum.IsDefined(typeof(Constants.GLOBAL_COMMAND), text))
             {
                 output = (int)Enum.Parse(typeof(Constants.GLOBAL_COMMAND), text, true);
             }
@@ -419,7 +440,7 @@ namespace BluetoothLights
 
         private static void debugOut(int number, bool append = false)
         {
-            debugOut(String.Format("{0}",number), append);
+            debugOut(String.Format("{0}", number), append);
         }
 
         private static void debugOut(string text, bool append = false)
@@ -428,7 +449,7 @@ namespace BluetoothLights
             text = text.Replace("\n", Environment.NewLine);
             if (append)
             {
-                debugText += text;                
+                debugText += text;
             }
             else
             {
@@ -457,6 +478,8 @@ namespace BluetoothLights
         private void connectCom_Click(object sender, EventArgs e)
         {
             _srl.PortName = (string)connectComBox.SelectedItem;
+            Properties.Settings.Default.lastPort = _srl.PortName;
+            Properties.Settings.Default.Save();
             statusBar.Text = "Disconnected";
             if (!_srl.IsOpen)
             {

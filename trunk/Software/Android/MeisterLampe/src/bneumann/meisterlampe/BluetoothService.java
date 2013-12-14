@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.UUID;
+import bneumann.meisterlampe.CommandHandler.ChannelCommandReceivedListener;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -64,6 +65,7 @@ public class BluetoothService
 	private Context mContext;
 	private Handler connectedHandler;
 	private long mTimeLast;
+	private ArrayList<DataReceivedListener> mDataReceivedListener = new ArrayList<DataReceivedListener>();
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
@@ -74,7 +76,18 @@ public class BluetoothService
 	public static final int STATE_CONNECTED = 3; // now connected to a remote
 													// device
 
-	private static final int COMMAND_TIME = 20; // pause between commands
+	
+	// Define our custom Listener interface
+	public interface DataReceivedListener
+	{
+		public abstract void OnDataReceive(byte[] command);
+	}
+	
+	public void AddDataReceivedListener (DataReceivedListener listener) 
+    {
+        // Store the listener object
+        this.mDataReceivedListener.add(listener);
+    }
 	
 	/**
 	 * Constructor. Prepares a new BluetoothChat session.
@@ -84,12 +97,12 @@ public class BluetoothService
 	 * @param handler
 	 *            A Handler to send messages back to the UI Activity
 	 */
-	public BluetoothService(Context context, Handler handler)
+	public BluetoothService(Context context)
 	{
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
 		mHandler = new ArrayList<Handler>();
-		mHandler.add(handler);
+		//mHandler.add(handler);
 		mReadBuffer = new byte[7];
 		mContext = context;
 		connectedHandler = new Handler(); 
@@ -393,7 +406,7 @@ public class BluetoothService
 	 */
 	private void connectionFailed()
 	{
-		//TODO: get that fixed
+		//FIXME: get that fixed
 //		// Send a failure message back to the Activity
 //		Message msg = mHandler.obtainMessage(MLStartupActivity.MESSAGE_TOAST);
 //		Bundle bundle = new Bundle();
@@ -614,6 +627,7 @@ public class BluetoothService
 		private int readBufferPosition;
 		private byte[] readBuffer;
 		private final byte CR, LF;
+		private int ACKcounter = 0;
         
 		public ConnectedThread(BluetoothSocket socket, String socketType)
 		{
@@ -645,30 +659,7 @@ public class BluetoothService
 			mmOutStream = tmpOut;
 		}
 
-		/*public void run()
-		{
-			Log.i(TAG, "BEGIN mConnectedThread");
-			byte[] buffer = new byte[CommandHandler.COMMAND_LENGTH];
 
-			// Keep listening to the InputStream while connected
-			while (true)
-			{
-				try
-				{
-					// Read from the InputStream
-					ReadWholeArray(mmInStream, buffer);
-					// Send the obtained bytes to the UI Activity
-					mReadBuffer = buffer;
-					buffer = new byte[CommandHandler.COMMAND_LENGTH];
-					sendMessages(MLStartupActivity.MESSAGE_READ, -1, -1, mReadBuffer);
-				} catch (IOException e)
-				{
-					Log.e(TAG, "disconnected", e);
-					connectionLost();
-					break;
-				}
-			}
-		}*/
 		public void run()
         {                
            while(!Thread.currentThread().isInterrupted() && !stopWorker)
@@ -693,9 +684,14 @@ public class BluetoothService
                                 for (byte by : encodedBytes) {
                                     sb.append(String.format("%02X ", by));
                                 }
-                                Log.d("ReceiveModule","Received: " + sb + " at " + TimeDiff());
+                                //Log.d("ReceiveModule","Received: " + sb + " at " + TimeDiff());
                                 readBufferPosition = 0;                                    
-                                sendMessages(MainActivity.MESSAGE_READ, -1, -1, encodedBytes);
+                                for (DataReceivedListener listener : mDataReceivedListener) 
+            					{
+            					    listener.OnDataReceive(encodedBytes);
+            					}
+                                ACKcounter++;
+                                Log.d("BluetoothService", "DATA received: " + ACKcounter);
                             }
                             else
                             {
@@ -726,7 +722,7 @@ public class BluetoothService
                 for (byte by : buffer) {
                     sb.append(String.format("%02X ", by));
                 }
-				Log.d("SendModule", "Sent: " + sb + " at " + TimeDiff());
+				//Log.d("SendModule", "Sent: " + sb + " at " + TimeDiff());
 				
 			} catch (IOException e)
 			{
@@ -742,23 +738,6 @@ public class BluetoothService
 			} catch (IOException e)
 			{
 				Log.e(TAG, "close() of connect socket failed", e);
-			}
-		}
-
-		private void ReadWholeArray(InputStream stream, byte[] data) throws IOException
-		{
-			int offset = 0;
-			int remaining = data.length;
-			while (remaining > 0)
-			{
-				
-				int read = stream.read(data, offset, remaining);
-				if (read <= 0)
-				{
-					throw new IOException("End of stream reached with" + remaining + "bytes left to read");
-				}
-				remaining -= read;
-				offset += read;
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 import org.xml.sax.SAXException;
 import android.util.Log;
+import bneumann.meisterlampe.CommandHandler.CLASS;
 import bneumann.meisterlampe.CommandHandler.COMMANDS;
 import bneumann.meisterlampe.CommandHandler.ChannelCommandReceivedListener;
 import bneumann.meisterlampe.CommandHandler.Channels;
@@ -280,9 +281,12 @@ public class Lamp implements ChannelCommandReceivedListener, GlobalCommandReceiv
 		mChChangeListener.add(listener);
 	}
 
-	
+	/**
+	 * Channel command received delegate
+	 */
 	public void OnCommandReceive(int command, int address, int payload)
 	{
+		Log.d("Lamp", "CHAN received");
 		if (!(address < this.mNumberOfChannels && address >= 0))
 		{
 			Log.w(TAG, "Address " + address + " out of scope!");
@@ -319,9 +323,13 @@ public class Lamp implements ChannelCommandReceivedListener, GlobalCommandReceiv
 		}
 	}
 
-	
+	/**
+	 * Global command received delegate
+	 */
 	public void OnCommandReceive(Command command)
 	{
+		//Log.d(TAG, "Received command: [Class: " + CLASS.Names[command.cla] + " Command: " + COMMANDS.Names[command.mode] + " Address: " + command.addressInteger + " Value: " + command.value + "]");
+		Log.d("Lamp", "GLOB received");
 		switch (command.mode)
 		{
 		case GLOBAL_COMMANDS.ERROR:
