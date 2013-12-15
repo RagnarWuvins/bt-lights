@@ -22,6 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:onClick="onFunctionClick"
             custom:horizontalPosition="left"
             custom:image="func"
             custom:verticalPosition="top" />
@@ -31,6 +32,8 @@
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:layout_weight="1"
+            
+            android:onClick="onFunctionClick"
             custom:horizontalPosition="right"
             custom:image="level"
             custom:verticalPosition="top" />
@@ -39,7 +42,8 @@
             android:id="@+id/FunctionPower"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="1"            
+            android:onClick="onFunctionClick"
             custom:horizontalPosition="left"
             custom:image="power"
             custom:verticalPosition="bottom" />
@@ -49,9 +53,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:onClick="onFunctionClick"
             custom:horizontalPosition="right"
             custom:image="settings"
-            custom:verticalPosition="bottom" />
+            custom:verticalPosition="bottom"
+             />
     </bneumann.meisterlampe.FunctionWheel>
 
     <bneumann.meisterlampe.SubButton

@@ -3,7 +3,6 @@ package bneumann.meisterlampe;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.TypedArray;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.widget.Button;

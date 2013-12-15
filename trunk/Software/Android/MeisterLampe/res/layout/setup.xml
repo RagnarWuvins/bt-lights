@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <CheckBox
+        android:id="@+id/SetupConnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="CheckBox" />
+
+    <bneumann.meisterlampe.SetupSpinner
+        android:id="@+id/SetupDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"        
+        android:background="@drawable/button_dropdown" />
+
+    <Button
+        android:id="@+id/SetupScan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onScanClick"
+        android:text="Scan for devices" />
+
+    <ListView
+        android:id="@+id/SetupDeviceList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+    </ListView>
+
+</LinearLayout>

@@ -1,6 +1,7 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
+import bneumann.meisterlampe.MainButton.Functions;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -13,6 +14,9 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.MarginLayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 
 @SuppressLint("ShowToast")
@@ -202,9 +206,52 @@ public class MainActivity extends Activity
 		enableFunctions();
 	}
 
+	public void onFunctionClick(View view)
+	{
+		final MainButton button = (MainButton) view;
+		Animation onClickAnim = AnimationUtils.loadAnimation(this, R.anim.onclick);
+		button.startAnimation(onClickAnim);
+		onClickAnim.setAnimationListener(new AnimationListener()
+		{			
+			public void onAnimationStart(Animation animation)
+			{				
+			}
+			
+			public void onAnimationRepeat(Animation animation)
+			{
+			}
+			
+			public void onAnimationEnd(Animation animation)
+			{
+				Functions cs = MainButton.Functions.values()[button.Function];
+				switch (cs)
+				{
+				case FUNC:
+					break;
+				case LEVEL:
+					break;
+				case POWER:
+					break;
+				case SETTINGS:
+					onSettingsClick(button);
+					break;
+				default:
+					break;
+				}
+			}
+		});
+
+	}
+	
+	public void onSettingsClick(MainButton button)
+	{
+		Intent intent = new Intent(this, SetupActivity.class);
+		this.startActivity(intent);
+	}
+	
 	public void onConnectClick(View view)
 	{
-		if(this.mContext.Emulator)
+		if (this.mContext.Emulator)
 		{
 			enableFunctions();
 			return;

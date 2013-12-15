@@ -4,6 +4,8 @@ MCU:
 0:  RX Serial (->)
 1:  TX Serial (->)
 2:  AT Pin (BT)
+6:	Reserved
+7:	Reserved
 8:	RESET (BT)
 9:	PWM
 10: Slave select (1)

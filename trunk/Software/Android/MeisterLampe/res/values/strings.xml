@@ -38,5 +38,7 @@
     <string name="no_bluetooth">This device does not support bluetooth!</string>
     <string name="connect_first_time">You are connecting the first time, setup your light first.</string>
     <string name="setup_string">~ connect ~</string>
+    <string name="title_activity_setup">SetupActivity</string>
+    <string name="action_settings">Settings</string>
 
 </resources>

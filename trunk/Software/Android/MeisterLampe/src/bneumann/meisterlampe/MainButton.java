@@ -17,6 +17,14 @@ public class MainButton extends Button
 	 * Shows the enum for the function func 0 power 1 settings 2 level 3
 	 */
 	public int Function;
+	public enum Functions
+	{
+		FUNC,
+		POWER,
+		SETTINGS,
+		LEVEL
+	}
+	
 	private RotateDrawable mBackground;
 
 	public MainButton(Context context, AttributeSet attrs)

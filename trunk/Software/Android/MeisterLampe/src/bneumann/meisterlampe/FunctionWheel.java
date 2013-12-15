@@ -3,10 +3,7 @@ package bneumann.meisterlampe;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -14,8 +11,6 @@ import android.widget.Button;
 public class FunctionWheel extends ViewGroup
 {
 
-	/** These are used for computing child frames based on their gravity. */
-	private final Rect mTmpChildRect = new Rect(0, 100, 100, 0);
 	private Point mScreen = new Point();
 	public double Scale = 0.9;
 	private Context mContext;
