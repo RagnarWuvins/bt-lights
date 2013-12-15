@@ -5,9 +5,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-public class ListArrayAdapter extends ArrayAdapter<String>
+public class ListArrayAdapter extends ArrayAdapter<BluetoothDeviceModel>
 {
 	private Context mContext;
 
@@ -17,9 +18,9 @@ public class ListArrayAdapter extends ArrayAdapter<String>
 		this.mContext = context;
 	}
 
-	public String[] getValues()
+	public BluetoothDeviceModel[] getValues()
 	{
-		String[] values = new String[this.getCount()];
+		BluetoothDeviceModel[] values = new BluetoothDeviceModel[this.getCount()];
 		for(int i = 0; i < values.length; i++)
 		{
 			values[i] = this.getItem(i);
@@ -33,22 +34,14 @@ public class ListArrayAdapter extends ArrayAdapter<String>
 		LayoutInflater inflater = (LayoutInflater)this.mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View rowView = inflater.inflate(R.layout.list, parent, false);
 		
-		String currentString = this.getValues()[position];
-		String firstLine = "";
-		String secondLine = "";		
-		
-		String[] splitString = currentString.split("\n");
-		firstLine = splitString[0];
-		if(splitString.length > 1)
-		{
-			secondLine = splitString[1];
-		}
+		BluetoothDeviceModel currentDevice = this.getValues()[position];		
 		
 		TextView textViewFirst = (TextView) rowView.findViewById(R.id.ListFirstLine);
-		textViewFirst.setText(firstLine);
+		textViewFirst.setText(currentDevice.getName());
 		TextView textViewSecond = (TextView) rowView.findViewById(R.id.ListSecondLine);
-		textViewSecond.setText(secondLine);
-
+		textViewSecond.setText(currentDevice.getAddress());
+		ImageView imageView = (ImageView) rowView.findViewById(R.id.ListIcon);
+		imageView.setImageResource(currentDevice.getIcon());
 		return rowView;
 	}
 }

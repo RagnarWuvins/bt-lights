@@ -13,6 +13,12 @@ public class SetupSpinner extends Spinner
 		super(context, attrs);
 	}
 
+	public SetupSpinner(Context context, AttributeSet attrs, int defStyle)
+	{
+		super(context, attrs, defStyle);
+		// TODO Auto-generated constructor stub
+	}
+
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
 	{
@@ -25,8 +31,8 @@ public class SetupSpinner extends Spinner
 		int h = d.getIntrinsicHeight();
 		int w = d.getIntrinsicWidth();
 
-		double scale = (double)h / (double)w;
-		
+		double scale = (double) h / (double) w;
+
 		int width;
 
 		// Measure Width
@@ -34,20 +40,18 @@ public class SetupSpinner extends Spinner
 		{
 			// Must be this size
 			width = widthSize;
-		}
-		else if (widthMode == MeasureSpec.AT_MOST)
+		} else if (widthMode == MeasureSpec.AT_MOST)
 		{
 			// Can't be bigger than...
 			width = Math.min(desiredWidth, widthSize);
-		}
-		else
+		} else
 		{
 			// Be whatever you want
 			width = desiredWidth;
 		}
 
 		// MUST CALL THIS
-		setMeasuredDimension(width, (int)(((double)width)*scale));
+		setMeasuredDimension(width, (int) (((double) width) * scale));
 	}
 
 }
