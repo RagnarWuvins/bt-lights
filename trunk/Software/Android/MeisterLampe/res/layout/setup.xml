@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res/bneumann.meisterlampe"
+    android:id="@+id/RelativeLayout1"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
@@ -8,25 +10,41 @@
         android:id="@+id/SetupConnect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
         android:text="CheckBox" />
 
     <bneumann.meisterlampe.SetupSpinner
         android:id="@+id/SetupDevice"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"        
-        android:background="@drawable/button_dropdown" />
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/SetupConnect"
+        android:layout_margin="5dp"
+        android:background="@drawable/button_dropdown"
+        android:spinnerMode="dialog" />
 
-    <Button
+    <bneumann.meisterlampe.SubButton
         android:id="@+id/SetupScan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/SetupDevice"
+        android:layout_margin="5dp"
         android:onClick="onScanClick"
-        android:text="Scan for devices" />
+        android:text="Scan for devices"
+        android:textColor="@color/standardText"
+        custom:fontSize="40"
+        custom:fontType="Angelic Serif.ttf" />
 
     <ListView
         android:id="@+id/SetupDeviceList"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/SetupScan"
+        android:layout_margin="5dp" >
+
     </ListView>
 
-</LinearLayout>
+</RelativeLayout>
