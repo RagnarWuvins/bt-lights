@@ -8,10 +8,12 @@
 
     <CheckBox
         android:id="@+id/SetupConnect"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
+        android:layout_margin="5dp"
+        android:button="@drawable/button_checkbox"
         android:text="CheckBox" />
 
     <bneumann.meisterlampe.SetupSpinner
@@ -38,7 +40,7 @@
         custom:fontType="Angelic Serif.ttf" />
 
     <ListView
-        android:id="@+id/SetupDeviceList"
+        android:id="@android:id/list"        
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -46,5 +48,4 @@
         android:layout_margin="5dp" >
 
     </ListView>
-
 </RelativeLayout>

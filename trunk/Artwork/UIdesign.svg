@@ -154,8 +154,8 @@
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1018"
-     inkscape:window-x="-32000"
-     inkscape:window-y="-32000"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
@@ -372,14 +372,20 @@
        height="50"
        x="801.42859"
        y="-44.780678"
-       ry="8.0712166" />
+       ry="8.0712166"
+       inkscape:export-filename="D:\SVN_LOCAL\bt-lights\trunk\Artwork\box.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <path
        style="fill:none;stroke:#000000;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="m 784.28571,201.42857 c 17.46776,4.2634 32.96688,14.43271 42.85715,41.42857 5.35179,-50.88845 27.85046,-74.62839 57.14285,-87.14285"
        id="path3811"
        inkscape:connector-curvature="0"
        transform="translate(0,-227.63782)"
-       sodipodi:nodetypes="ccc" />
+       sodipodi:nodetypes="ccc"
+       inkscape:export-filename="D:\SVN_LOCAL\bt-lights\trunk\Artwork\check.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        inkscape:export-ydpi="90"
        inkscape:export-xdpi="90"

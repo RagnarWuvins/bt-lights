@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -108,22 +109,6 @@ public class MainActivity extends Activity
 	public void onStart()
 	{
 		super.onStart();
-
-		if (!mConnectAtStartup)
-		{
-			return;
-		}
-		// start request to enable bluetooth
-		if (this.mContext.BTAdapter.isEnabled())
-		{
-			OpenBT();
-		}
-		else
-		{
-			Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-			startActivityForResult(enabler, REQUEST_ENABLE);
-			return;
-		}
 	}
 
 	public void onDestroy()
