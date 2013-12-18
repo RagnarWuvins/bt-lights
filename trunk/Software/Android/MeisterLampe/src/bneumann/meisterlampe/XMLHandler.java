@@ -143,10 +143,10 @@ public class XMLHandler
 			serializer.startTag(null, "setting");
 			serializer.attribute(null, "ID", "1");
 			serializer.attribute(null, "CustomName", "UserSetting");
-			serializer.attribute(null, "Version", String.format("%d.%d", mLamp.HWVersion, mLamp.HWBuild));
+			//serializer.attribute(null, "Version", String.format("%d.%d", mLamp.HWVersion, mLamp.HWBuild));
 			serializer.attribute(null, "Date", new Date().toString());
 			
-			for (int i = 0; i < mLamp.GetNumberOfChannels(); i++)
+			for (int i = 0; i < Lamp.NUMBER_OF_CHANNELS; i++)
 			{
 				Channel curChan = mLamp.channels[i];
 

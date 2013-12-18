@@ -10,19 +10,15 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.Toast;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ClipData.Item;
 import android.content.SharedPreferences;
 
 public class SetupActivity extends PreferenceActivity
@@ -37,7 +33,6 @@ public class SetupActivity extends PreferenceActivity
 	private ListArrayAdapter mListAdapter;
 	private DropDownArrayAdapter mDropAdapter;
 	private BluetoothAdapter mBtAdapter;
-	private BluetoothService mBtService;
 	private BluetoothDeviceModel mDefaultDevice;
 	
 	private final BroadcastReceiver mReceiver = new BroadcastReceiver()
@@ -75,7 +70,6 @@ public class SetupActivity extends PreferenceActivity
 		}
 		
 		this.mBtAdapter = BluetoothAdapter.getDefaultAdapter();
-		this.mBtService = new BluetoothService(getApplicationContext());
 		
 		this.mListAdapter = new ListArrayAdapter(getApplicationContext());
 		this.mDropAdapter = new DropDownArrayAdapter(getApplicationContext());
@@ -110,6 +104,25 @@ public class SetupActivity extends PreferenceActivity
 
 		SetupSpinner sp = (SetupSpinner) findViewById(R.id.SetupDevice);
 		sp.setAdapter(mDropAdapter);
+		
+		sp.setOnItemSelectedListener(new OnItemSelectedListener(){
+
+			public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
+			{
+				BluetoothDeviceModel bdm = (BluetoothDeviceModel) parent.getItemAtPosition(position);
+				mBtAdapter.cancelDiscovery();
+				BluetoothDevice bd = mBtAdapter.getRemoteDevice(bdm.getAddress());
+				activateBondedDevice(bd);				
+			}
+
+			public void onNothingSelected(AdapterView<?> arg0)
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});
+		
 		this.listPairedDevices();
 
 		if(this.mDropAdapter.getPositionByString(this.mDefaultDevice.getName()) >= 0)
@@ -129,8 +142,9 @@ public class SetupActivity extends PreferenceActivity
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString(DEFAULT_DEVICE_NAME, bd.getName());
 		editor.putString(DEFAULT_DEVICE_ADDRESS, bd.getAddress());
+		editor.putBoolean(FIRST_TIME_STARTUP, false);
 		editor.commit();
-		this.mBtService.connect(bd, false);
+		
 	}
 
 	protected void bondAndActivateDevice(BluetoothDevice bd)
@@ -139,8 +153,8 @@ public class SetupActivity extends PreferenceActivity
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString(DEFAULT_DEVICE_NAME, bd.getName());
 		editor.putString(DEFAULT_DEVICE_ADDRESS, bd.getAddress());
+		editor.putBoolean(FIRST_TIME_STARTUP, false);
 		editor.commit();
-		this.mBtService.connect(bd, false);
 	}
 
 	@TargetApi(Build.VERSION_CODES.FROYO)	
@@ -150,8 +164,7 @@ public class SetupActivity extends PreferenceActivity
 		
 		// Get settings:
 		SharedPreferences sharedPrefs = this.getSharedPreferences(SHARED_PREFERENCES, MODE_PRIVATE);
-		mDefaultDevice = new BluetoothDeviceModel(sharedPrefs.getString(DEFAULT_DEVICE_NAME, ""), sharedPrefs.getString(DEFAULT_DEVICE_ADDRESS, ""));
-		
+		mDefaultDevice = new BluetoothDeviceModel(sharedPrefs.getString(DEFAULT_DEVICE_NAME, ""), sharedPrefs.getString(DEFAULT_DEVICE_ADDRESS, ""));		
 	}
 	
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)

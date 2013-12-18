@@ -1,41 +1,26 @@
-/*
- * Copyright (C) 2009 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package bneumann.meisterlampe;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.UUID;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.os.Handler;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
 import android.util.Log;
 
 /**
  * This class does all the work for setting up and managing Bluetooth connections with other devices. It has a thread that listens for incoming connections, a
  * thread for connecting with a device, and a thread for performing data transmissions when connected.
  */
-public class BluetoothService
+public class BluetoothService extends Service
 {
 	// Debugging
 	private static final String TAG = "BluetoothService";
@@ -45,13 +30,20 @@ public class BluetoothService
 	private static final UUID MY_UUID_SECURE = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	private static final UUID MY_UUID_INSECURE = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
+	// Constants for other Applications
+	public static final String CONNECTION_ADDRESS = "connection_address";
+	public static final String CONNECTION_SECURE = "connection_secure";
+	public static final String RX_NEW_PACKAGE = "rx_new_package";
+	public static final String CONNECTION_STATE_CHANGE = "state_change";
+	
 	// Member fields
-	private final BluetoothAdapter mAdapter;
-	private static ArrayList<Handler> mHandler;
+	private IBinder mBinder = new BluetoothServiceBinder();
+	private BluetoothAdapter mAdapter;
 	private ConnectThread mConnectThread;
 	private ConnectedThread mConnectedThread;
 	private int mState;
-	private ArrayList<DataReceivedListener> mDataReceivedListener = new ArrayList<DataReceivedListener>();
+	private NotificationManager mNM;
+	private int NOTIFICATION = 42;
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
@@ -66,26 +58,91 @@ public class BluetoothService
 		public abstract void OnDataReceive(byte[] command);
 	}
 
-	public void AddDataReceivedListener(DataReceivedListener listener)
+	// ---------------------------------------
+	// Start of the Service overridden methods
+	// ---------------------------------------
+
+	@Override
+	public void onCreate()
 	{
-		// Store the listener object
-		this.mDataReceivedListener.add(listener);
+		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		this.mAdapter = BluetoothAdapter.getDefaultAdapter();
+		this.mState = STATE_NONE;
+		super.onCreate();
+	}
+
+	@Override
+	public IBinder onBind(Intent intent)
+	{
+		initFromIntent(intent);
+		return mBinder;
+	}
+
+	// We need to implement a binder who returns this class at onConnection!
+	public class BluetoothServiceBinder extends Binder
+	{
+		BluetoothService getService()
+		{
+			return BluetoothService.this;
+		}
+	}
+
+	/***
+	 * Starts the service. The intent should have CONNECTION_ADDRESS and CONNECTION_SECURE as extras
+	 */
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId)
+	{
+		initFromIntent(intent);
+		return super.onStartCommand(intent, flags, startId);
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		disconnect(false);
+		this.mNM.cancelAll();
+		super.onDestroy();
+	}
+
+	// ---------------------------------------
+	// Here some helper functions
+	// ---------------------------------------
+
+	private void initFromIntent(Intent intent)
+	{
+		String deviceAddress = intent.getStringExtra(BluetoothService.CONNECTION_ADDRESS);
+		boolean secure = intent.getBooleanExtra(BluetoothService.CONNECTION_SECURE, true);
+		BluetoothDevice bd = this.mAdapter.getRemoteDevice(deviceAddress);
+		connect(bd, secure);
 	}
 
 	/**
-	 * Constructor. Prepares a new BluetoothChat session.
-	 * 
-	 * @param context
-	 *            The UI Activity Context
-	 * @param handler
-	 *            A Handler to send messages back to the UI Activity
-	 */
-	public BluetoothService(Context context)
+	 * Show a notification while this service is running.
+	 */	
+	@SuppressWarnings("deprecation") //TODO: fix for newer versions
+	private void showNotification(String label, String text)
 	{
-		mAdapter = BluetoothAdapter.getDefaultAdapter();
-		mState = STATE_NONE;
-		mHandler = new ArrayList<Handler>();
+		// Set the icon, scrolling text and timestamp
+		Notification notification = new Notification(android.R.drawable.ic_menu_compass, label + " +++ " + text, System.currentTimeMillis());
+
+		Intent notificationIntent = new Intent(this, MainActivity.class);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		
+		// The PendingIntent to launch our activity if the user selects this notification
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,notificationIntent , 0);
+
+		// Set the info for the views that show in the notification panel.
+		notification.setLatestEventInfo(this, label, text, contentIntent);
+		notification.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR | Notification.FLAG_ONLY_ALERT_ONCE; // last flag is for tablet
+
+		// Send the notification.
+		mNM.notify(NOTIFICATION, notification);
 	}
+
+	// ---------------------------------------
+	// Here comes the Bluetooth code
+	// ---------------------------------------
 
 	/**
 	 * Set the current state of the chat connection
@@ -98,18 +155,10 @@ public class BluetoothService
 		if (D)
 			Log.d(TAG, "setState() " + mState + " -> " + state);
 		mState = state;
-
-		// Give the new state to the Handler so the UI Activity can update
-		sendMessages(MainActivity.MESSAGE_STATE_CHANGE, state, -1, null);
-	}
-
-	private void sendMessages(int what, int arg1, int arg2, Object obj)
-	{
-		Iterator<Handler> it = mHandler.iterator();
-		while (it.hasNext())
-		{
-			it.next().obtainMessage(what, arg1, arg2, obj).sendToTarget();
-		}
+		showNotification("State has changed!","Current state: " + state);
+		Intent intent = new Intent(CONNECTION_STATE_CHANGE);
+		intent.putExtra(CONNECTION_STATE_CHANGE, state);
+		sendBroadcast(intent);
 	}
 
 	/**
@@ -157,23 +206,30 @@ public class BluetoothService
 	}
 
 	/***
-	 * 
-	 * @param device
-	 * @param secure
+	 * Disconnect and stop all threads
 	 */
-	public synchronized void disconnect()
+	public synchronized void disconnect(boolean stopService)
 	{
+		if (D)
+			Log.d(TAG, "disconnect");
+
 		if (mConnectThread != null)
 		{
 			mConnectThread.cancel();
 			mConnectThread = null;
 		}
+
 		if (mConnectedThread != null)
 		{
 			mConnectedThread.cancel();
 			mConnectedThread = null;
 		}
 		setState(STATE_NONE);
+		// stopping the service
+		if (stopService)
+		{
+			stopSelf();
+		}
 	}
 
 	/**
@@ -208,28 +264,6 @@ public class BluetoothService
 		mConnectedThread.start();
 
 		setState(STATE_CONNECTED);
-	}
-
-	/**
-	 * Stop all threads
-	 */
-	public synchronized void stop()
-	{
-		if (D)
-			Log.d(TAG, "stop");
-
-		if (mConnectThread != null)
-		{
-			mConnectThread.cancel();
-			mConnectThread = null;
-		}
-
-		if (mConnectedThread != null)
-		{
-			mConnectedThread.cancel();
-			mConnectedThread = null;
-		}
-		setState(STATE_NONE);
 	}
 
 	/**
@@ -280,7 +314,15 @@ public class BluetoothService
 	 */
 	private void connectionFailed()
 	{
-		// FIXME: Return connection fail message	
+		// FIXME: Return connection fail message to binder
+	}
+
+	/**
+	 * Indicate that the connection attempt was successful and notify the UI Activity.
+	 */
+	private void connectionDone()
+	{
+		// FIXME: Return connection fail message to binder
 	}
 
 	/**
@@ -335,6 +377,7 @@ public class BluetoothService
 			}
 			catch (IOException e)
 			{
+				Log.e(TAG, "unable to connect " + mSocketType + " socket during connection, closing socket first", e);
 				// Close the socket
 				try
 				{
@@ -344,7 +387,7 @@ public class BluetoothService
 				{
 					Log.e(TAG, "unable to close() " + mSocketType + " socket during connection failure", e2);
 				}
-				Log.e(TAG, "Socket opening faile because of: " + e);
+				Log.e(TAG, "Socket opening failed because of: " + e);
 				connectionFailed();
 				return;
 			}
@@ -383,8 +426,6 @@ public class BluetoothService
 		private boolean stopWorker;
 		private int readBufferPosition;
 		private byte[] readBuffer;
-		private final byte CR, LF;
-		private int ACKcounter = 0;
 
 		public ConnectedThread(BluetoothSocket socket, String socketType)
 		{
@@ -392,10 +433,6 @@ public class BluetoothService
 			mmSocket = socket;
 			InputStream tmpIn = null;
 			OutputStream tmpOut = null;
-
-			// START NEW DRIVER
-			CR = 0xA; // This is the ASCII code for a carriage return
-			LF = 0xD; // This is the ASCII code for a line feed
 
 			stopWorker = false;
 			readBufferPosition = 0;
@@ -415,6 +452,7 @@ public class BluetoothService
 
 			mmInStream = tmpIn;
 			mmOutStream = tmpOut;
+			connectionDone();
 		}
 
 		public void run()
@@ -430,25 +468,31 @@ public class BluetoothService
 						mmInStream.read(packetBytes);
 						for (int i = 0; i < bytesAvailable; i++)
 						{
-							byte b = packetBytes[i];
-							byte b4 = i == 0 ? 0 : packetBytes[i - 1];
-							if ((b == CR) && (b4 == LF))
+							// check if we might have read stupid data:
+							if(readBuffer[0] > 10 || readBuffer[1] > 10)
 							{
-								byte[] encodedBytes = new byte[readBufferPosition];
+								readBuffer = new byte[readBuffer.length];
+								readBufferPosition = 0;
+								break;
+							}
+							byte b = packetBytes[i];
+							int packageLength = readBuffer[3] & 0xff;
+							if (readBufferPosition >= packageLength*4-1 && readBufferPosition > 3)
+							{
+								byte[] encodedBytes = new byte[packageLength*4];
 								System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length - 1);
+								Intent intent = new Intent(RX_NEW_PACKAGE);
+								intent.putExtra(RX_NEW_PACKAGE, encodedBytes);	
+								sendBroadcast(intent);
 								final StringBuilder sb = new StringBuilder();
 								for (byte by : encodedBytes)
 								{
 									sb.append(String.format("%02X ", by));
 								}
-								// Log.d("ReceiveModule","Received: " + sb + " at " + TimeDiff());
+								Log.d("ReadModule", "Read: " + sb);
+								showNotification("New message: ", sb.toString());
+								readBuffer = new byte[readBuffer.length];
 								readBufferPosition = 0;
-								for (DataReceivedListener listener : mDataReceivedListener)
-								{
-									listener.OnDataReceive(encodedBytes);
-								}
-								ACKcounter++;
-								Log.d("BluetoothService", "DATA received: " + ACKcounter);
 							}
 							else
 							{
@@ -480,7 +524,7 @@ public class BluetoothService
 				{
 					sb.append(String.format("%02X ", by));
 				}
-				// Log.d("SendModule", "Sent: " + sb + " at " + TimeDiff());
+				Log.d("SendModule", "Sent: " + sb);
 
 			}
 			catch (IOException e)
@@ -501,4 +545,5 @@ public class BluetoothService
 			}
 		}
 	}
+
 }

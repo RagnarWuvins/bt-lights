@@ -118,10 +118,10 @@ public class TimeController extends View
 	public int getCurrentChannel()
 	{
 		int curChannel = (m_point.x / mChanWidth);
-		if (curChannel > MainActivity.connectedLamp.GetNumberOfChannels() - 1)
+		if (curChannel > Lamp.NUMBER_OF_CHANNELS - 1)
 		{
-			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + MainActivity.connectedLamp.GetNumberOfChannels());
-			curChannel =  MainActivity.connectedLamp.GetNumberOfChannels() - 1;
+			Log.w(TAG,"Wrong channel addressed. Maximum number of channels is: " + Lamp.NUMBER_OF_CHANNELS);
+			curChannel =  Lamp.NUMBER_OF_CHANNELS - 1;
 		}
 		return curChannel;
 	}

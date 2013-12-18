@@ -1,17 +1,19 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
-import bneumann.meisterlampe.MainButton.Functions;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.MarginLayoutParams;
@@ -19,6 +21,8 @@ import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
 import android.widget.Toast;
+import bneumann.meisterlampe.MainButton.Functions;
+import bneumann.protocol.Package;
 
 @SuppressLint("ShowToast")
 public class MainActivity extends Activity
@@ -32,27 +36,50 @@ public class MainActivity extends Activity
 	public static final int MESSAGE_READ = 2;
 	public static final int MESSAGE_TOAST = 3;
 	public static final int MESSAGE_DEVICE_NAME = 4;
-	public static final String DEVICE_NAME = null;
-	public static final String TOAST = null;
-	// public static int numberOfChannels = 10;
+
 	public static ArrayList<String> errorLog = new ArrayList<String>();
-	private static BluetoothService mMLBluetoothService;
-	public static Lamp connectedLamp;
+	private BluetoothService mBluetoothService;
+	private String mDefaultDevice;
+	public static Lamp mLamp;
 
 	protected String EXTRA_DEVICE_ADDRESS;
 	public static int REQUEST_NUMBER = 0;
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
 	public static final String RESET_HARDWARE = "reset_hardware";
-	private boolean mConnectAtStartup = false;
-	private Toast mToast; // Toast object to prevent overlapping Toasts
-	private String mDefaultDevice;
-	private CommandHandler mCommandHandler;
 
 	protected boolean reconnectTask = false; // set to true if the system should try to reconnect after STATE_NONE
 	public boolean mState = false;
 	private boolean mFirstTimeStartup;
 
 	private AppContext mContext;
+
+	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver()
+	{
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			String action = intent.getAction();
+			if (action.equals(BluetoothService.CONNECTION_STATE_CHANGE))
+			{
+				int state = intent.getIntExtra(BluetoothService.CONNECTION_STATE_CHANGE, -1);
+				onBluetoothStateChange(state);
+			}
+			if (action.equals(BluetoothService.RX_NEW_PACKAGE))
+			{
+				byte[] encodedBytes = intent.getByteArrayExtra(BluetoothService.RX_NEW_PACKAGE);
+				try
+				{
+					Package p = new Package(encodedBytes);
+					mLamp.Update(p);
+					ArrayList<String> als = mLamp.getErrorLog();
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	};
 
 	/** Called when the activity is first created. */
 
@@ -68,8 +95,11 @@ public class MainActivity extends Activity
 		SubButton sb = (SubButton) findViewById(R.id.SettingsButton);
 		final FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
 
+		// deactivate wheel
 		fw.setEnabled(false);
 
+		// setting the connect button
+		// TODO: rework this part to be in XML
 		android.view.ViewGroup.MarginLayoutParams lp = (MarginLayoutParams) sb.getLayoutParams();
 		lp.topMargin = fw.getMargin();
 		lp.width = fw.getSize();
@@ -82,26 +112,24 @@ public class MainActivity extends Activity
 		sb.setLayoutParams(lp);
 
 		// load settings
-		connectedLamp = new Lamp();
+		mLamp = new Lamp();
 		loadSettings();
 
-		// mOutputText = (TextView) findViewById(R.id.outputText);
-
-		mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT); // init Toast
-		// mChannelTable = (TableLayout) findViewById(R.id.channelTable);
+		Toast.makeText(this, "", Toast.LENGTH_SHORT); // init Toast
 
 		// initialize bluetooth adapter
 		this.mContext.BTAdapter = BluetoothAdapter.getDefaultAdapter();
 
-		// if (this.mContext.BTAdapter == null)
+		// Register all receivers for this activity
+		registerReceiver(mMessageReceiver, new IntentFilter(BluetoothService.RX_NEW_PACKAGE));
+		registerReceiver(mMessageReceiver, new IntentFilter(BluetoothService.CONNECTION_STATE_CHANGE));
+
 		if (!this.mContext.Emulator && this.mContext.BTAdapter == null)
 		{
 			Log.d(TAG, getString(R.string.no_bluetooth));
 			sb.setEnabled(false);
 			fw.setEnabled(false);
 			Toast.makeText(this, R.string.no_bluetooth, Toast.LENGTH_LONG).show();
-			// Setup a commandhandler that doesn't do anything for debug
-			mCommandHandler = new CommandHandler(this, null);
 			return;
 		}
 	}
@@ -113,11 +141,9 @@ public class MainActivity extends Activity
 
 	public void onDestroy()
 	{
+		// stop bluetooth connection
+		doUnbindService();
 		super.onDestroy();
-		if (mMLBluetoothService != null)
-		{
-			mMLBluetoothService.stop();
-		}
 	}
 
 	public void onResume()
@@ -149,43 +175,6 @@ public class MainActivity extends Activity
 		}
 	}
 
-	public void OpenBT()
-	{
-		// mProgressDialog = ProgressDialog.show(this, "", getString(R.string.trying_to_connect), false, true);
-		// registerReceivers();
-
-		// Initialize the MLBluetoothService to perform bluetooth connections
-		if (mMLBluetoothService == null)
-		{
-			mMLBluetoothService = new BluetoothService(this);
-		}
-
-		if (mDefaultDevice != null)
-		{
-			BluetoothDevice device = this.mContext.BTAdapter.getRemoteDevice(mSettings.getString(Settings.DEFAULT_DEVICE, ""));
-
-			if (mMLBluetoothService.getState() != BluetoothService.STATE_CONNECTED)
-			{
-				mMLBluetoothService.connect(device, true);
-			}
-			else
-			{
-				// mProgressDialog.cancel();
-			}
-
-		}
-		else
-		{
-			mToast.setText(R.string.no_default_device_found);
-			// start to discover bluetooth devices
-			this.mContext.BTAdapter.startDiscovery();
-		}
-		// create the command handler and setup the interface
-		mCommandHandler = new CommandHandler(this, mMLBluetoothService);
-		mCommandHandler.AddChannelCommandReceivedListener(connectedLamp);
-		mCommandHandler.AddGlobalCommandReceivedListener(connectedLamp);
-	}
-
 	public void onResumeBluetoothEnable()
 	{
 		enableFunctions();
@@ -197,15 +186,15 @@ public class MainActivity extends Activity
 		Animation onClickAnim = AnimationUtils.loadAnimation(this, R.anim.onclick);
 		button.startAnimation(onClickAnim);
 		onClickAnim.setAnimationListener(new AnimationListener()
-		{			
+		{
 			public void onAnimationStart(Animation animation)
-			{				
+			{
 			}
-			
+
 			public void onAnimationRepeat(Animation animation)
 			{
 			}
-			
+
 			public void onAnimationEnd(Animation animation)
 			{
 				Functions cs = MainButton.Functions.values()[button.Function];
@@ -216,6 +205,7 @@ public class MainActivity extends Activity
 				case LEVEL:
 					break;
 				case POWER:
+					onPowerButton(button);
 					break;
 				case SETTINGS:
 					onSettingsClick(button);
@@ -225,15 +215,23 @@ public class MainActivity extends Activity
 				}
 			}
 		});
-
 	}
-	
+
+	public void onPowerButton(MainButton button)
+	{
+		byte errorlog = Lamp.GET_ERRORLOG;
+		byte version = Lamp.GET_SYSTEM_VERSION;
+		byte cc = Lamp.GET_COMMAND_COUNTER;
+		byte time = Lamp.GET_SYSTEM_TIME;
+		byte[] out = {00, 00, 00, 02, time, 00, 00, 00};
+		this.mBluetoothService.write(out);
+	}
 	public void onSettingsClick(MainButton button)
 	{
 		Intent intent = new Intent(this, SetupActivity.class);
 		this.startActivity(intent);
 	}
-	
+
 	public void onConnectClick(View view)
 	{
 		if (this.mContext.Emulator)
@@ -257,30 +255,67 @@ public class MainActivity extends Activity
 	 */
 	private void enableFunctions()
 	{
-		FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
 		if (this.mFirstTimeStartup)
 		{
-			Toast.makeText(this, R.string.connect_first_time, Toast.LENGTH_SHORT).show();
-			fw.setChildEnabled(3, true);
+			Toast.makeText(this, R.string.connect_first_time, Toast.LENGTH_SHORT).show();			
 		}
 		else
 		{
-			fw.setEnabled(true);
+			// TODO: do NOT set functions enabled before connection, just start the service. Has to be done in Service feedback
+			doBindService();
 		}
+	}
+
+	private ServiceConnection mServiceConnection = new ServiceConnection()
+	{
+		public void onServiceDisconnected(ComponentName name)
+		{
+			Log.d(TAG, "Service disconnected");
+		}
+
+		public void onServiceConnected(ComponentName name, IBinder service)
+		{
+			// casting awesomeness to get the service and attach it to the
+			mBluetoothService = ((BluetoothService.BluetoothServiceBinder) service).getService();
+			Log.d(TAG, "Service connected");			
+		}
+	};
+
+	protected void onBluetoothStateChange(int state)
+	{
+		FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
+		switch (state)
+		{
+		case BluetoothService.STATE_NONE:
+			fw.setEnabled(false);
+			break;
+		case BluetoothService.STATE_CONNECTING:
+			fw.setEnabled(false);
+			break;
+		case BluetoothService.STATE_CONNECTED:			
+			fw.setEnabled(true);
+			break;
+		}
+		// the setup button should be enabled regardless of the BT state (to choose another device)
+		fw.setChildEnabled(3, true);
 	}
 
 	public void loadSettings()
 	{
-		this.mSettings = PreferenceManager.getDefaultSharedPreferences(this);
-		// TODO: this might be an android issue?!
-		connectedLamp.SetNumberOfChannels(Integer.parseInt(mSettings.getString(Settings.NUM_OF_CHANNELS, "10")));
-		this.mConnectAtStartup = mSettings.getBoolean(Settings.CONNECT_ON_STARTUP, false);
-		this.mDefaultDevice = mSettings.getString(Settings.DEFAULT_DEVICE, null);
-		this.mFirstTimeStartup = mSettings.getBoolean(Settings.FIRST_TIME_STARTUP, true);
+		this.mSettings = getSharedPreferences(SetupActivity.SHARED_PREFERENCES, MODE_PRIVATE);
+		this.mDefaultDevice = mSettings.getString(SetupActivity.DEFAULT_DEVICE_ADDRESS, null);
+		this.mFirstTimeStartup = mSettings.getBoolean(SetupActivity.FIRST_TIME_STARTUP, true);
 	}
 
-	public static BluetoothService getBluetoothService()
+	void doBindService()
 	{
-		return mMLBluetoothService;
+		Intent intent = new Intent(this, BluetoothService.class);
+		intent.putExtra(BluetoothService.CONNECTION_ADDRESS, this.mDefaultDevice);
+		bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
+	}
+
+	void doUnbindService()
+	{
+		unbindService(mServiceConnection);
 	}
 }
