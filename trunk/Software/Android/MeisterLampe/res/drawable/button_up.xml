@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item android:drawable="@drawable/rotate_background"/>
+    <item
+        android:drawable="@drawable/img_up"
+        android:right="30dp"
+        android:top="20dp"/>
+
+</layer-list>

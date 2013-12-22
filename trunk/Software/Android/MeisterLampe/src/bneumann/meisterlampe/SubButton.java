@@ -18,12 +18,14 @@ public class SubButton extends Button
 		super(context, attrs);
 		this.setBackgroundResource(R.drawable.button_setup);
 		TypedArray tAttributes = context.obtainStyledAttributes(attrs, R.styleable.SubButton, 0, 0);
-
-		this.mFontName = tAttributes.getString(R.styleable.SubButton_fontType);
-		this.mFontSize = tAttributes.getFloat(R.styleable.SubButton_fontSize, 12);
-		AssetManager asm = getResources().getAssets();
-		Typeface font = Typeface.createFromAsset(asm, this.mFontName);
-		this.setTypeface(font);
+		if (!isInEditMode())
+		{
+			this.mFontName = tAttributes.getString(R.styleable.SubButton_fontType);
+			this.mFontSize = tAttributes.getFloat(R.styleable.SubButton_fontSize, 12);
+			AssetManager asm = getResources().getAssets();
+			Typeface font = Typeface.createFromAsset(asm, this.mFontName);
+			this.setTypeface(font);
+		}
 		this.setTextSize(this.mFontSize);
 
 		tAttributes.recycle();

@@ -99,7 +99,7 @@ public class Lamp implements Serializable
 		return this.mSystime;
 	}
 	
-	public int getCommandCuunter()
+	public int getCommandCounter()
 	{
 		return this.mCommandCounter;
 	}

@@ -74,7 +74,7 @@ public class BluetoothService extends Service
 	@Override
 	public IBinder onBind(Intent intent)
 	{
-		initFromIntent(intent);
+		//initFromIntent(intent);
 		return mBinder;
 	}
 
@@ -96,7 +96,7 @@ public class BluetoothService extends Service
 		initFromIntent(intent);
 		return super.onStartCommand(intent, flags, startId);
 	}
-
+	
 	@Override
 	public void onDestroy()
 	{
@@ -167,6 +167,14 @@ public class BluetoothService extends Service
 	public synchronized int getState()
 	{
 		return mState;
+	}
+	
+	/**
+	 * Force sending a broadcast with our current state
+	 */
+	public synchronized void queryState()
+	{
+		this.setState(this.mState);
 	}
 
 	/**

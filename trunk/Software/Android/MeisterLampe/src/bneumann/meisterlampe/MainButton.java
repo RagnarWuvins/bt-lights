@@ -14,7 +14,7 @@ public class MainButton extends Button
 	/** Shows if the button is top (0) or bottom (1) */
 	public int VerticalPosition;
 	/**
-	 * Shows the enum for the function func 0 power 1 settings 2 level 3
+	 * Shows the enum for the function func 0 power 1 settings 2 level 3 up 4  down 5  back 6 
 	 */
 	public int Function;
 	public enum Functions
@@ -22,7 +22,10 @@ public class MainButton extends Button
 		FUNC,
 		POWER,
 		SETTINGS,
-		LEVEL
+		LEVEL,
+		UP,
+		DOWN,
+		BACK
 	}
 	
 	private RotateDrawable mBackground;
@@ -50,6 +53,15 @@ public class MainButton extends Button
 			break;
 		case 3:
 			funcId = R.drawable.button_level;
+			break;
+		case 4:
+			funcId = R.drawable.button_up;
+			break;
+		case 5:
+			funcId = R.drawable.button_down;
+			break;
+		case 6:
+			funcId = R.drawable.button_back;
 			break;
 		default:
 			break;

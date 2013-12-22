@@ -6,5 +6,10 @@
         <item>Switched on</item>
         <item>Switched off</item>
         <item>Function</item>
-    </string-array>   
+    </string-array>  
+    <integer name="AnimationTimeFast">400</integer>
+    <integer name="AnimationTimeSlow">500</integer>
+    <string-array name="Fonts">
+        <item>Angelic Serif.ttf</item>
+    </string-array>
 </resources>

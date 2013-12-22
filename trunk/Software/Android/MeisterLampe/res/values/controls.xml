@@ -15,6 +15,9 @@
             <enum name="power" value="1" />
             <enum name="settings" value="2" />
             <enum name="level" value="3" />
+            <enum name="up" value="4" />
+            <enum name="down" value="5" />
+            <enum name="back" value="6" />
         </attr>
     </declare-styleable>
     <declare-styleable name="SubButton">

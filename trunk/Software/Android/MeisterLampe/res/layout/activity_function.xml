@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res/bneumann.meisterlampe"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/LinearLayout1"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    tools:context=".FunctionActivity" >
+
+    <bneumann.meisterlampe.FunctionWheel
+        android:id="@+id/FunctionSelectionWheel"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="center_horizontal"
+        android:onClick="onFunctionClick"
+        android:layout_marginTop="30dp"
+        android:background="#FFFFFF" >
+
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionSelectionBack"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:onClick="onFunctionClick"
+            custom:horizontalPosition="left"
+            custom:image="func"
+            custom:verticalPosition="top" />
+
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionSelectionSine"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
+            android:onClick="onFunctionClick"
+            custom:horizontalPosition="right"
+            custom:image="up"
+            custom:verticalPosition="top" />
+
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionSelectionUp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:onClick="onFunctionClick"
+            custom:horizontalPosition="left"
+            custom:image="back"
+            custom:verticalPosition="bottom" />
+
+        <bneumann.meisterlampe.MainButton
+            android:id="@+id/FunctionSelectionDown"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:onClick="onFunctionClick"
+            custom:horizontalPosition="right"
+            custom:image="down"
+            custom:verticalPosition="bottom" />
+        
+    </bneumann.meisterlampe.FunctionWheel>
+
+    <TextView
+        android:id="@+id/FunctionSelectionDescription"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_margin="30dp"
+        android:text="@string/function_selection_description" />
+
+</LinearLayout>

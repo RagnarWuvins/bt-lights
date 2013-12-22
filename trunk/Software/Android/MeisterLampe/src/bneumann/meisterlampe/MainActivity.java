@@ -47,9 +47,8 @@ public class MainActivity extends Activity
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
 	public static final String RESET_HARDWARE = "reset_hardware";
 
-	protected boolean reconnectTask = false; // set to true if the system should try to reconnect after STATE_NONE
-	public boolean mState = false;
 	private boolean mFirstTimeStartup;
+	private boolean mIsBound = false;
 
 	private AppContext mContext;
 
@@ -67,16 +66,7 @@ public class MainActivity extends Activity
 			if (action.equals(BluetoothService.RX_NEW_PACKAGE))
 			{
 				byte[] encodedBytes = intent.getByteArrayExtra(BluetoothService.RX_NEW_PACKAGE);
-				try
-				{
-					Package p = new Package(encodedBytes);
-					mLamp.Update(p);
-					ArrayList<String> als = mLamp.getErrorLog();
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
+				receiveNewPackage(encodedBytes);
 			}
 		}
 	};
@@ -132,6 +122,29 @@ public class MainActivity extends Activity
 			Toast.makeText(this, R.string.no_bluetooth, Toast.LENGTH_LONG).show();
 			return;
 		}
+
+		// FunctionWheel fw = (FunctionWheel)findViewById(R.id.FunctionWheel);
+		fw.playStartupAnimation(0);
+	}
+
+	/**
+	 * Receives a new package from the BluetoothService and puts it into it's Lamp module
+	 * 
+	 * @param encodedBytes
+	 *            package bytes from the service
+	 */
+	public void receiveNewPackage(byte[] encodedBytes)
+	{
+		try
+		{
+			Package p = new Package(encodedBytes);
+			mLamp.Update(p);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
 	}
 
 	public void onStart()
@@ -149,6 +162,7 @@ public class MainActivity extends Activity
 	public void onResume()
 	{
 		super.onResume();
+		this.doBindService();
 		loadSettings();
 	}
 
@@ -201,11 +215,12 @@ public class MainActivity extends Activity
 				switch (cs)
 				{
 				case FUNC:
+					onFunctionSelectionClick(button);
 					break;
 				case LEVEL:
 					break;
 				case POWER:
-					onPowerButton(button);
+					onPowerClick(button);
 					break;
 				case SETTINGS:
 					onSettingsClick(button);
@@ -217,15 +232,24 @@ public class MainActivity extends Activity
 		});
 	}
 
-	public void onPowerButton(MainButton button)
+	public void onFunctionSelectionClick(MainButton button)
 	{
-		byte errorlog = Lamp.GET_ERRORLOG;
-		byte version = Lamp.GET_SYSTEM_VERSION;
-		byte cc = Lamp.GET_COMMAND_COUNTER;
-		byte time = Lamp.GET_SYSTEM_TIME;
-		byte[] out = {00, 00, 00, 02, time, 00, 00, 00};
+		this.doUnbindService();
+		Intent intent = new Intent(this, FunctionActivity.class);
+		this.startActivity(intent);
+		overridePendingTransition(R.anim.fadein, R.anim.fadeout);
+	}
+
+	public void onPowerClick(MainButton button)
+	{
+		// byte errorlog = Lamp.GET_ERRORLOG;
+		// byte version = Lamp.GET_SYSTEM_VERSION;
+		// byte cc = Lamp.GET_COMMAND_COUNTER;
+		// byte time = Lamp.GET_SYSTEM_TIME;
+		byte[] out = { 00, 00, 00, 02, Lamp.GET_SYSTEM_TIME, 00, 00, 00 };
 		this.mBluetoothService.write(out);
 	}
+
 	public void onSettingsClick(MainButton button)
 	{
 		Intent intent = new Intent(this, SetupActivity.class);
@@ -257,11 +281,16 @@ public class MainActivity extends Activity
 	{
 		if (this.mFirstTimeStartup)
 		{
-			Toast.makeText(this, R.string.connect_first_time, Toast.LENGTH_SHORT).show();			
+			Toast.makeText(this, R.string.connect_first_time, Toast.LENGTH_SHORT).show();
+			if(this.mContext.Emulator)
+			{
+				FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
+				fw.setEnabled(true);
+			}			
 		}
 		else
-		{
-			// TODO: do NOT set functions enabled before connection, just start the service. Has to be done in Service feedback
+		{			
+			startupService();
 			doBindService();
 		}
 	}
@@ -277,7 +306,9 @@ public class MainActivity extends Activity
 		{
 			// casting awesomeness to get the service and attach it to the
 			mBluetoothService = ((BluetoothService.BluetoothServiceBinder) service).getService();
-			Log.d(TAG, "Service connected");			
+			// If we come her from a service reconnection -> tell our UI what to do
+			mBluetoothService.queryState();
+			Log.d(TAG, "Service connected");
 		}
 	};
 
@@ -292,7 +323,7 @@ public class MainActivity extends Activity
 		case BluetoothService.STATE_CONNECTING:
 			fw.setEnabled(false);
 			break;
-		case BluetoothService.STATE_CONNECTED:			
+		case BluetoothService.STATE_CONNECTED:
 			fw.setEnabled(true);
 			break;
 		}
@@ -307,15 +338,26 @@ public class MainActivity extends Activity
 		this.mFirstTimeStartup = mSettings.getBoolean(SetupActivity.FIRST_TIME_STARTUP, true);
 	}
 
+	private void startupService()
+	{
+		Intent intent = new Intent(this, BluetoothService.class);
+		intent.putExtra(BluetoothService.CONNECTION_ADDRESS, this.mDefaultDevice);
+		startService(intent);
+	}
+
 	void doBindService()
 	{
 		Intent intent = new Intent(this, BluetoothService.class);
 		intent.putExtra(BluetoothService.CONNECTION_ADDRESS, this.mDefaultDevice);
-		bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
+		this.mIsBound = bindService(intent, mServiceConnection, BIND_AUTO_CREATE);
 	}
 
 	void doUnbindService()
 	{
-		unbindService(mServiceConnection);
+		if (this.mIsBound)
+		{
+			unbindService(mServiceConnection);
+			this.mIsBound = false;
+		}
 	}
 }

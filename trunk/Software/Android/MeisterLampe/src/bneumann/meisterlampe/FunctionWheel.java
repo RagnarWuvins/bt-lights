@@ -6,6 +6,8 @@ import android.graphics.Point;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 
 public class FunctionWheel extends ViewGroup
@@ -25,6 +27,18 @@ public class FunctionWheel extends ViewGroup
 		this.mContext = context;
 	}
 
+	public void playStartupAnimation(int delay)
+	{
+		final int count = getChildCount();
+		for(int i = 0; i < count; i++)
+		{	
+			Animation bounceIn = AnimationUtils.loadAnimation(this.getContext(), R.anim.bouncein);
+			bounceIn.setStartOffset((i*100) + delay);			
+			this.getChildAt(i).startAnimation(bounceIn);
+		}
+		
+	}
+	
 	/**
 	 * Returns the width and height size of the wheel. It depends on the Scale parameter.
 	 * 

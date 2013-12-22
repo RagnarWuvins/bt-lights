@@ -23,8 +23,9 @@
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/SetupConnect"
         android:layout_margin="5dp"
-        android:background="@drawable/button_dropdown"
-        android:spinnerMode="dialog" />
+        android:drawSelectorOnTop="true"
+        android:src="@drawable/img_dropdown_arrow"
+        android:background="@drawable/button_dropdown"/>
 
     <bneumann.meisterlampe.SubButton
         android:id="@+id/SetupScan"
