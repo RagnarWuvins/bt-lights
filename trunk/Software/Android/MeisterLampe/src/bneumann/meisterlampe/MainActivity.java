@@ -1,8 +1,12 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -22,7 +26,6 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 import bneumann.meisterlampe.MainButton.Functions;
-import bneumann.protocol.Package;
 
 @SuppressLint("ShowToast")
 public class MainActivity extends Activity
@@ -40,8 +43,9 @@ public class MainActivity extends Activity
 	public static ArrayList<String> errorLog = new ArrayList<String>();
 	private BluetoothService mBluetoothService;
 	private String mDefaultDevice;
-	public static Lamp mLamp;
-
+	private Lamp mLamp;
+	private NotificationManager mNM;
+	
 	protected String EXTRA_DEVICE_ADDRESS;
 	public static int REQUEST_NUMBER = 0;
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
@@ -65,11 +69,36 @@ public class MainActivity extends Activity
 			}
 			if (action.equals(BluetoothService.RX_NEW_PACKAGE))
 			{
-				byte[] encodedBytes = intent.getByteArrayExtra(BluetoothService.RX_NEW_PACKAGE);
-				receiveNewPackage(encodedBytes);
+				mLamp = mBluetoothService.getLamp();
+				String t = String.format(Locale.getDefault(), "%02d:%02d:%02d", mLamp.getSystemTime()[0], mLamp.getSystemTime()[1], mLamp.getSystemTime()[2]);
+				showNotification("Connection done", "Version: " + mLamp.getVersion() + " Build: " + mLamp.getBuild() + " Uptime: " + t);
 			}
 		}
 	};
+
+	
+	/**
+	 * Show a notification while this service is running.
+	 */	
+	@SuppressWarnings("deprecation") //TODO: fix for newer versions
+	private void showNotification(String label, String text)
+	{
+		// Set the icon, scrolling text and timestamp
+		Notification notification = new Notification(android.R.drawable.ic_menu_compass, label + " +++ " + text, System.currentTimeMillis());
+
+		Intent notificationIntent = new Intent(this, MainActivity.class);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		
+		// The PendingIntent to launch our activity if the user selects this notification
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,notificationIntent , 0);
+
+		// Set the info for the views that show in the notification panel.
+		notification.setLatestEventInfo(this, label, text, contentIntent);
+		notification.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR | Notification.FLAG_ONLY_ALERT_ONCE; // last flag is for tablet
+
+		// Send the notification.
+		mNM.notify(42, notification);
+	}
 
 	/** Called when the activity is first created. */
 
@@ -79,7 +108,8 @@ public class MainActivity extends Activity
 		super.onCreate(savedInstanceState);
 
 		this.mContext = new AppContext();
-
+		this.mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+				
 		setContentView(R.layout.main);
 
 		SubButton sb = (SubButton) findViewById(R.id.SettingsButton);
@@ -137,8 +167,8 @@ public class MainActivity extends Activity
 	{
 		try
 		{
-			Package p = new Package(encodedBytes);
-			mLamp.Update(p);
+			//Package p = new Package(encodedBytes);
+			//mLamp.Update(p);
 		}
 		catch (Exception e)
 		{
@@ -156,6 +186,8 @@ public class MainActivity extends Activity
 	{
 		// stop bluetooth connection
 		doUnbindService();
+		unregisterReceiver(mMessageReceiver);
+		this.mNM.cancelAll();
 		super.onDestroy();
 	}
 
@@ -218,6 +250,7 @@ public class MainActivity extends Activity
 					onFunctionSelectionClick(button);
 					break;
 				case LEVEL:
+					onLevelClick(button);
 					break;
 				case POWER:
 					onPowerClick(button);
@@ -242,12 +275,16 @@ public class MainActivity extends Activity
 
 	public void onPowerClick(MainButton button)
 	{
-		// byte errorlog = Lamp.GET_ERRORLOG;
-		// byte version = Lamp.GET_SYSTEM_VERSION;
-		// byte cc = Lamp.GET_COMMAND_COUNTER;
-		// byte time = Lamp.GET_SYSTEM_TIME;
-		byte[] out = { 00, 00, 00, 02, Lamp.GET_SYSTEM_TIME, 00, 00, 00 };
-		this.mBluetoothService.write(out);
+		this.mBluetoothService.queryLampUpdate();
+	}
+	
+	public void onLevelClick(MainButton button)
+	{
+		this.mBluetoothService.queryErrorLog();
+		this.doUnbindService();
+		Intent intent = new Intent(this, LevelActivity.class);
+		this.startActivity(intent);
+		overridePendingTransition(R.anim.fadein, R.anim.fadeout);
 	}
 
 	public void onSettingsClick(MainButton button)
@@ -295,6 +332,9 @@ public class MainActivity extends Activity
 		}
 	}
 
+	/**
+	 * This is initialized when bound to the service. 
+	 */
 	private ServiceConnection mServiceConnection = new ServiceConnection()
 	{
 		public void onServiceDisconnected(ComponentName name)
@@ -312,6 +352,10 @@ public class MainActivity extends Activity
 		}
 	};
 
+	/**
+	 * When the BluetoothService changes it's state this function will device what to do
+	 * @param state is one of BluetoothService STATE_* states
+	 */
 	protected void onBluetoothStateChange(int state)
 	{
 		FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
@@ -325,6 +369,7 @@ public class MainActivity extends Activity
 			break;
 		case BluetoothService.STATE_CONNECTED:
 			fw.setEnabled(true);
+			this.mBluetoothService.queryLampUpdate();
 			break;
 		}
 		// the setup button should be enabled regardless of the BT state (to choose another device)

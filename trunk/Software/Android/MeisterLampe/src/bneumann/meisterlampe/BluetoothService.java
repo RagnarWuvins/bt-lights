@@ -3,6 +3,8 @@ package bneumann.meisterlampe;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.UUID;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -11,10 +13,14 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import bneumann.protocol.Package;
 
 /**
  * This class does all the work for setting up and managing Bluetooth connections with other devices. It has a thread that listens for incoming connections, a
@@ -44,7 +50,9 @@ public class BluetoothService extends Service
 	private int mState;
 	private NotificationManager mNM;
 	private int NOTIFICATION = 42;
-
+	private Lamp mLamp;
+	private BluetoothDevice mBluetoothDevice;
+	
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
 	public static final int STATE_CONNECTING = 1; // now initiating an outgoing
@@ -52,12 +60,34 @@ public class BluetoothService extends Service
 	public static final int STATE_CONNECTED = 2; // now connected to a remote
 													// device
 
-	// Define our custom Listener interface
-	public interface DataReceivedListener
+	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver()
 	{
-		public abstract void OnDataReceive(byte[] command);
-	}
-
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			//TODO: for API > 11 it is possible to listen to connection changes. How cool would that be!
+			String action = intent.getAction();
+			if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
+			{
+				int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
+				// remap Bluetoothadapter state to internal Service state
+				if (state == BluetoothAdapter.STATE_OFF)
+				{
+					setState(STATE_NONE);
+					disconnect(false);
+				}
+				else
+				{
+					// if we already were connected feel free to reconnect
+					if(mBluetoothDevice != null)
+					{
+						connect(mBluetoothDevice, true);
+					}
+				}
+			}
+		}
+	};	
+	
 	// ---------------------------------------
 	// Start of the Service overridden methods
 	// ---------------------------------------
@@ -68,6 +98,10 @@ public class BluetoothService extends Service
 		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		this.mAdapter = BluetoothAdapter.getDefaultAdapter();
 		this.mState = STATE_NONE;
+		this.mLamp = new Lamp();
+		
+		// register for BluetoothAdapter change of state
+		registerReceiver(mMessageReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 		super.onCreate();
 	}
 
@@ -101,6 +135,7 @@ public class BluetoothService extends Service
 	public void onDestroy()
 	{
 		disconnect(false);
+		unregisterReceiver(mMessageReceiver);
 		this.mNM.cancelAll();
 		super.onDestroy();
 	}
@@ -111,10 +146,13 @@ public class BluetoothService extends Service
 
 	private void initFromIntent(Intent intent)
 	{
-		String deviceAddress = intent.getStringExtra(BluetoothService.CONNECTION_ADDRESS);
-		boolean secure = intent.getBooleanExtra(BluetoothService.CONNECTION_SECURE, true);
-		BluetoothDevice bd = this.mAdapter.getRemoteDevice(deviceAddress);
-		connect(bd, secure);
+		if( intent.hasExtra(BluetoothService.CONNECTION_ADDRESS))
+		{
+			String deviceAddress = intent.getStringExtra(BluetoothService.CONNECTION_ADDRESS);
+			boolean secure = intent.getBooleanExtra(BluetoothService.CONNECTION_SECURE, true);
+			mBluetoothDevice = this.mAdapter.getRemoteDevice(deviceAddress);
+			connect(mBluetoothDevice, secure);
+		}
 	}
 
 	/**
@@ -139,7 +177,44 @@ public class BluetoothService extends Service
 		// Send the notification.
 		mNM.notify(NOTIFICATION, notification);
 	}
+	// ---------------------------------------
+	// Lamp connection management
+	// ---------------------------------------
+	
+	private synchronized boolean updateLamp(byte[] encodedBytes)
+	{
+		Package p;
+		boolean status = false; 
+		try
+		{
+			p = new Package(encodedBytes);
+			mLamp.update(p);
+			status = true;
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		return status;
+		
+	}
+	
+	public synchronized Lamp getLamp()
+	{
+		return this.mLamp;
+	}
+	
 
+	public synchronized void queryLampUpdate()
+	{
+		this.write(this.mLamp.getUpdatePackage().getBytes());
+	}
+	
+	public synchronized void queryErrorLog()
+	{		
+		this.write(this.mLamp.getErrorLogRequestPackage().getBytes());
+	}
+	
 	// ---------------------------------------
 	// Here comes the Bluetooth code
 	// ---------------------------------------
@@ -155,7 +230,7 @@ public class BluetoothService extends Service
 		if (D)
 			Log.d(TAG, "setState() " + mState + " -> " + state);
 		mState = state;
-		showNotification("State has changed!","Current state: " + state);
+		//showNotification("State has changed!","Current state: " + state);
 		Intent intent = new Intent(CONNECTION_STATE_CHANGE);
 		intent.putExtra(CONNECTION_STATE_CHANGE, state);
 		sendBroadcast(intent);
@@ -298,23 +373,9 @@ public class BluetoothService extends Service
 		r.write(out);
 	}
 
-	public boolean sendMessage(byte[] message)
+	public void write(Package data)
 	{
-		boolean intState = false;
-		// Check that we're actually connected before trying anything
-		if (getState() != STATE_CONNECTED)
-		{
-			intState = false;
-			return intState;
-		}
-
-		// Check that there's actually something to send
-		if (message.length > 0)
-		{
-			write(message);
-			intState = true;
-		}
-		return intState;
+		write(data.getBytes());
 	}
 
 	/**
@@ -489,16 +550,10 @@ public class BluetoothService extends Service
 							{
 								byte[] encodedBytes = new byte[packageLength*4];
 								System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length - 1);
+								updateLamp(encodedBytes);
 								Intent intent = new Intent(RX_NEW_PACKAGE);
 								intent.putExtra(RX_NEW_PACKAGE, encodedBytes);	
-								sendBroadcast(intent);
-								final StringBuilder sb = new StringBuilder();
-								for (byte by : encodedBytes)
-								{
-									sb.append(String.format("%02X ", by));
-								}
-								Log.d("ReadModule", "Read: " + sb);
-								showNotification("New message: ", sb.toString());
+								sendBroadcast(intent);								
 								readBuffer = new byte[readBuffer.length];
 								readBufferPosition = 0;
 							}

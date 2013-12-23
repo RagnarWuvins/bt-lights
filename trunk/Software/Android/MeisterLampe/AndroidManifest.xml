@@ -73,6 +73,10 @@
             android:name="bneumann.meisterlampe.FunctionActivity"
             android:label="@string/title_activity_function" >
         </activity>
+        <activity
+            android:name="bneumann.meisterlampe.LevelActivity"
+            android:label="@string/title_activity_level" >
+        </activity>
     </application>
 
 </manifest>

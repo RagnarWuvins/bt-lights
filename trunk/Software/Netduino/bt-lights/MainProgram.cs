@@ -16,6 +16,7 @@ namespace BTLights
     {
         public const int Version = 3;
         public const int Build = 0;
+        public const int TraceTime = 50;
 
         public static LightStringCollection channels;
         public static BTM222 mBluetoothModule;
@@ -27,15 +28,15 @@ namespace BTLights
             CommandUnknown,         // 0x00: just unknown command (maybe came through checksum by incident)
             CommandCorrupt,         // 0x01: not a mChannelID (internal) command
             CommandAssertionFail,   // 0x02: it was neither internal nor external (maybe length 0)
-            InterpretationError,    // 0x03: to many commands comming in
+            InterpretationError,    // 0x03: Header not found, clearing memory
             WrongFunction,          // 0x04: This functioin is not declared
-            CHANNEL_VALUE_ASSERT,   // 0x05: the mChannelID changed its value very fast, this should not happen accidently
-            EXTRACT_RACE_CONDITION, // 0x06: a race condition occured while extracting the command
-            BUFFER_INDEX_OUT_RANGE, // 0x07: The buffer write or read pointer are out of range
-            TYPE_CAST_FAILED,       // 0x08: While casting from byte to another type the system encountered an error
-            WRONG_MODE_POINTER,     // 0x09: Wrong mode set. Will be set to NOOP instead
-            CHANNEL_CMD_UNKNOWN,    // 0x0A: This is an unhandled mChannelID or global command
+            ChannelValueAssertion,   // 0x05: the mChannelID changed its value very fast, this should not happen accidently
+            BluetoothRacetimeCondition, // 0x06: a race condition occured while extracting the command
+            BufferOverflow,         // 0x07: The buffer write or read pointer are out of range
+            CastingFailed,          // 0x08: While casting from byte to another type the system encountered an error
+            WrongMode,              // 0x09: Wrong mode set. Will be set to NOOP instead
         };
+
         public struct Errorlog
         {
             public Package log;
@@ -83,8 +84,6 @@ namespace BTLights
             mTimerCallback = new TimerCallback(ResetBluetoothCallback);
             mTimer = new Timer(mTimerCallback, null, BTM222.ConnectionTimeout, 0);
 
-            RegisterError(ErrorCodes.CHANNEL_CMD_UNKNOWN);
-
             Thread.Sleep(-1);
         }
 
@@ -121,8 +120,10 @@ namespace BTLights
             }
         }
 
-        public static void ChannelTracer(uint state)
+        public static void ChannelTracer(uint payload)
         {
+            uint state = payload & 0xff;
+            uint time = (payload & 0xff00) >> 8;
             if (state == 0)
             {
                 if (mTraceTimer != null)
@@ -132,7 +133,8 @@ namespace BTLights
             }
             else
             {
-                mTraceTimer = new Timer(mTraceTimerCallback, null, 0, 100);
+                time = time <= TraceTime ? TraceTime : time;
+                mTraceTimer = new Timer(mTraceTimerCallback, null, 0, (int)time);
                 
             }
         }

@@ -2,6 +2,8 @@ package bneumann.protocol;
 
 public class ErrorEntry extends Frame
 {	
+	public static final int TIMESTAMP_MASK = 0xffff;
+	
 	public ErrorEntry()
 	{
 		// TODO Auto-generated constructor stub
@@ -20,7 +22,7 @@ public class ErrorEntry extends Frame
 	
 	public int getTimeStamp()
 	{
-		return (int)(this.getPayload() & ~(0xff << (Frame.ERROR_CODE_INDEX - 1) * 8));
+		return (int)(this.getPayload() & TIMESTAMP_MASK);
 	}
 
 }

@@ -2,9 +2,8 @@ package bneumann.meisterlampe;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Locale;
 import android.util.Log;
 import bneumann.protocol.ErrorEntry;
 import bneumann.protocol.Frame;
@@ -12,65 +11,151 @@ import bneumann.protocol.Package;
 
 public class Lamp implements Serializable
 {
-	public final static int SET_MODE = 0x00; // 0x00: Set the mChannelID mode
-	public final static int GET_MODE = 0x01; // 0x01: Get the mChannelID mode
-	public final static int SET_VALUE = 0x02; // 0x02: Set current value
-	public final static int GET_VALUE = 0x03; // 0x03: Get current value
-	public final static int SET_MAXIMUM = 0x04; // 0x04: Set the maximum value
-	public final static int GET_MAXIMUM = 0x05; // 0x05: Get the maximum value
-	public final static int SET_MINIMUM = 0x06; // 0x06: Set the minimum value
-	public final static int GET_MINIMUM = 0x07; // 0x07: Get the minimum value
-	public final static int SET_DELAY = 0x08; // 0x08: Set the timer delay
-	public final static int GET_DELAY = 0x09; // 0x09: Get the timer delay
-	public final static int SET_PERIOD = 0x0A; // 0x0A: Set the timer period
-	public final static int GET_PERIOD = 0x0B; // 0x0B: Get the timer period
-	public final static int SET_RISE = 0x0C; // 0x0C: Set rise modifier
-	public final static int GET_RISE = 0x0D; // 0x0D: Get rise modifier
-	public final static int SET_OFFSET = 0x0E; // 0x0E: Set offset modifier
-	public final static int GET_OFFSET = 0x0F; // 0x0F: Set offset modifier
-	public final static int RESET_CHANNEL = 0x10; // 0x10: Reset the mChannelID timer
-	public final static int GET_COMMAND_COUNTER = 0x11; // 0x11: Get the command counter
-	public final static int RESET_COMMAND_COUNTER = 0x12; // 0x12: Reset the command counter
-	public final static int GET_ERRORLOG = 0x13; // 0x13: trace out the error log
-	public final static int RESET_SYSTEM = 0x14; // 0x14: Do a hardware reset
-	public final static int GET_SYSTEM_TIME = 0x15; // 0x15: Get the time on the board
-	public final static int GET_SYSTEM_VERSION = 0x16; // 0x16: Get the hardware version
-	public final static int RESET_BLUETOOTH = 0x17; // 0x17: Reset the BT module only
-	public final static int ACKNOWLEDGE = 0x18; // 0x18: Acknowdlege received command
-	public final static int CHANNEL_TRACER = 0x19; // 0x19: Activate or Deactivate channel value tracer
-	public final static int NUMBER_OF_COMMANDS = 0x1A; // Number of commands
+	public final static int SET_MODE = 0x00; 				// Set the mChannelID mode
+	public final static int GET_MODE = 0x01; 				// Get the mChannelID mode
+	public final static int SET_VALUE = 0x02; 				// Set current value
+	public final static int GET_VALUE = 0x03; 				// Get current value
+	public final static int SET_FUNCTION = 0x04; 			// Set current value
+	public final static int GET_FUNCTION = 0x05; 			// Get current value
+	public final static int SET_MAXIMUM = 0x06; 			// Set the maximum value
+	public final static int GET_MAXIMUM = 0x07; 			// Get the maximum value
+	public final static int SET_MINIMUM = 0x08; 			// Set the minimum value
+	public final static int GET_MINIMUM = 0x09; 			// Get the minimum value
+	public final static int SET_DELAY = 0x0A; 				// Set the timer delay
+	public final static int GET_DELAY = 0x0B; 				// Get the timer delay
+	public final static int SET_PERIOD = 0x0C; 				// Set the timer period
+	public final static int GET_PERIOD = 0x0D; 				// Get the timer period
+	public final static int SET_RISE = 0x0E; 				// Set rise modifier
+	public final static int GET_RISE = 0x0F; 				// Get rise modifier
+	public final static int SET_OFFSET = 0x10; 				// Set offset modifier
+	public final static int GET_OFFSET = 0x11; 				// Set offset modifier
+	/**	Reset timer of given channel */
+	public final static int RESET_CHANNEL = 0x12;
+	public final static int GET_COMMAND_COUNTER = 0x13; 	// Get the command counter
+	public final static int RESET_COMMAND_COUNTER = 0x14; 	// Reset the command counter
+	public final static int GET_ERRORLOG = 0x15;			// trace out the error log
+	public final static int RESET_SYSTEM = 0x16; 			// Do a hardware reset
+	public final static int GET_SYSTEM_TIME = 0x17; 		// Get the time on the board
+	public final static int GET_SYSTEM_VERSION = 0x18; 		// Get the hardware version
+	public final static int RESET_BLUETOOTH = 0x19; 		// Reset the BT module only
+	public final static int ACKNOWLEDGE = 0x1A; 			// Acknowledge received command
+	/**	 Activate or Deactivate channel value tracer */	
+	public final static int CHANNEL_TRACER = 0x1B; 			
+	/**	 Resets all the channel timers at once */
+	public final static int RESET_ALL_TIMER = 0x1C; 		
+	public final static int NUMBER_OF_COMMANDS = 0x1D; 		// Number of commands
+
+	public final static int MODE_NOOP = 0x00; 	        // no change of current mode
+	public final static int MODE_DIRECT = 0x01;	        // Use mChannelID value
+	public final static int MODE_ON = 0x02;             // On value
+	public final static int MODE_OFF = 0x03;            // Off value
+	public final static int MODE_FUNC = 0x04;	        // set Function
+
+	public final static int FUNC_SINE = 0x00; 		// lowest possible function value (will be send with value :)
+	public final static int FUNC_SAW = 0x01;        // fade in no out
+	public final static int FUNC_SAW_REV = 0x02;    // fade out no in
 
 	public final static int NUMBER_OF_CHANNELS = 10;
 
 	private static final long serialVersionUID = 1L;
 	private static final String TAG = "LampClass";
 
-	public Channel[] channels;
+	public Channel[] mChannel;
 	private ErrorList mErrorList;
 	private int mBuild = -1, mVersion = -1, mSystime = -1, mCommandCounter = 0;
 
 	public Lamp()
 	{
 		this.mErrorList = new ErrorList();
+		this.mChannel = new Channel[NUMBER_OF_CHANNELS];
+		for (int i = 0; i < NUMBER_OF_CHANNELS; i++)
+		{
+			this.mChannel[i] = new Channel();
+		}
 	}
 
-	public void Update(Package p)
+	public Package getUpdatePackage()
+	{
+		byte[] channelGetter = { GET_DELAY, GET_MAXIMUM, GET_MINIMUM, GET_PERIOD, GET_VALUE, GET_MODE, GET_VALUE, GET_FUNCTION };
+		byte[] globalGetter = { GET_COMMAND_COUNTER, GET_SYSTEM_TIME, GET_SYSTEM_VERSION };
+		Package p = new Package();
+		for (int i = 0; i < channelGetter.length; i++)
+		{
+			for (int j = 0; j < NUMBER_OF_CHANNELS; j++)
+			{
+				Frame f = new Frame();
+				f.setFunction(channelGetter[i]);
+				f.setByte(Frame.CHANNEL_CODE_INDEX, (byte) j);
+				p.add(f);
+			}
+		}
+		for (int i = 0; i < globalGetter.length; i++)
+		{
+			Frame f = new Frame();
+			f.setFunction(globalGetter[i]);
+			p.add(f);
+		}
+		return p;
+	}
+
+	public Package getErrorLogRequestPackage()
+	{
+		Package p = new Package();
+		Frame f = new Frame();
+		f.setFunction((byte) GET_ERRORLOG);
+		p.add(f);
+		return p;
+	}
+
+	public void update(Package p)
 	{
 		Frame[] frames = p.getFrames();
 		for (int i = 0; i < frames.length; i++)
 		{
+			int channel = frames[i].getByte(Frame.CHANNEL_CODE_INDEX) & 0xff;
+			int payload = frames[i].getPayload();
+			int value = frames[i].getByte(Frame.VALUE_CODE_INDEX) & 0xff;
 			switch (frames[i].getFunction())
 			{
 			case GET_SYSTEM_VERSION:
-				setSystemVersion(frames[i].getPayload());
+				this.setSystemVersion(payload);
 				break;
 			case GET_SYSTEM_TIME:
 				this.mSystime = frames[i].getPayload();
 			case GET_COMMAND_COUNTER:
-				this.mCommandCounter = frames[i].getPayload();
+				this.mCommandCounter = payload;
 				break;
 			case GET_ERRORLOG:
 				this.mErrorList.add(frames[i]);
+				break;
+			case GET_DELAY:
+				this.mChannel[channel].setDelay(value);
+			case GET_FUNCTION:
+				this.mChannel[channel].setFunction(value);
+				break;
+			case GET_MAXIMUM:
+				this.mChannel[channel].setMax(value);
+				break;
+			case GET_MINIMUM:
+				this.mChannel[channel].setMin(value);
+				break;
+			case GET_VALUE:
+				this.mChannel[channel].setValue(value);
+				break;
+			case GET_MODE:
+				this.mChannel[channel].setMode(value);
+				break;
+			case GET_PERIOD:
+				this.mChannel[channel].setPeriod(value);
+				break;
+			case GET_OFFSET:
+				this.mChannel[channel].setOffset(value);
+				break;
+			case ACKNOWLEDGE:
+				Log.d(TAG, "Acknowledged command: " + frames[i].getValue());
+				break;
+			case 0:
+				// let's ignore 0 at the moment
 				break;
 			default:
 				Log.d(TAG, "Function: " + frames[i].getFunction() + " Payload: " + frames[i].getPayload());
@@ -93,31 +178,56 @@ public class Lamp implements Serializable
 	{
 		return this.mVersion;
 	}
-	
-	public int getSystemTime()
+
+	public int[] getSystemTime()
 	{
-		return this.mSystime;
+		return getTimeArray(this.mSystime);
 	}
-	
+
 	public int getCommandCounter()
 	{
 		return this.mCommandCounter;
 	}
-	
+
 	public ArrayList<String> getErrorLog()
 	{
 		return this.mErrorList.getErrorLog();
 	}
 
+	public int[] getChannelValues()
+	{
+		int[] output = new int[this.mChannel.length];
+		int count = 0;
+		for (Channel c : this.mChannel)
+		{
+			output[count] = c.getValue();
+			count++;
+		}
+		return output;
+	}
+
+	public int[] getTimeArray(int timeStamp)
+	{
+		int hours = timeStamp / 3600;
+		int remainder = timeStamp - hours * 3600;
+		int mins = remainder / 60;
+		remainder = remainder - mins * 60;
+		int secs = remainder;
+
+		int[] ints = { hours, mins, secs };
+		return ints;
+	}
+
 	public class Channel
 	{
 		public int ID, lastMode;
-		private int mValue, mMode, mDelay, mPeriod, mOffset, mRise, mMin, mMax;
+		private int mValue, mMode, mFunction, mDelay, mPeriod, mOffset, mRise, mMin, mMax;
 
 		public Channel()
 		{
 			this.ID = 0;
 			this.mMode = 0;
+			this.mFunction = 0;
 			this.lastMode = 0;
 			this.mDelay = 0;
 			this.mValue = 0;
@@ -127,6 +237,16 @@ public class Lamp implements Serializable
 			this.mPeriod = 0;
 			this.mRise = 0;
 			this.mOffset = 0;
+		}
+
+		public void setFunction(int value)
+		{
+			this.mFunction = value;
+		}
+		
+		public int getFunction()
+		{
+			return this.mFunction;
 		}
 
 		public void setValue(int value)
@@ -225,7 +345,7 @@ public class Lamp implements Serializable
 			mErrorLog.add(0x00, "Just unknown command (maybe came through checksum by incident)");
 			mErrorLog.add(0x01, "Not a mChannelID (internal) command");
 			mErrorLog.add(0x02, "It was neither internal nor external (maybe length 0)");
-			mErrorLog.add(0x03, "Too many commands comming in");
+			mErrorLog.add(0x03, "Header not found, clearing memory");
 			mErrorLog.add(0x04, "This functioin is not declared");
 			mErrorLog.add(0x05, "the mChannelID changed its value very fast, this should not happen accidently");
 			mErrorLog.add(0x06, "A race condition occured while extracting the command");
@@ -235,37 +355,29 @@ public class Lamp implements Serializable
 			mErrorLog.add(0x0A, "This is an unhandled mChannelID or global command");
 		}
 
-		@Override
-		public boolean add(Frame object)
-		{
-			// we do not add objects that are not in the error log
-			if (object.getFunction() == 0)
-			{
-				return false;
-			}
-			return super.add(object);
-		}
-
 		public ArrayList<String> getErrorLog()
 		{
 			ArrayList<String> map = new ArrayList<String>();
 			Iterator<Frame> it = iterator();
 			while (it.hasNext())
-			{				
+			{
 				try
 				{
 					ErrorEntry curFrame;
 					curFrame = new ErrorEntry(it.next().getByteData());
-					map.add(mErrorLog.get(curFrame.getError()));
+					String entry = mErrorLog.get(curFrame.getError());
+					int[] ts = getTimeArray(curFrame.getTimeStamp());
+					String timeStamp = String.format(Locale.getDefault(), "[%d:%d:%d]", ts[0], ts[1], ts[2]);
+					map.add(entry + " " + timeStamp);
 				}
 				catch (Exception e)
 				{
-					Log.e(TAG,"Some entries have not been added to error list");
+					Log.e(TAG, "Some entries have not been added to error list");
+					e.printStackTrace();
 				}
-				
+
 			}
 			return map;
-
 		}
 	}
 

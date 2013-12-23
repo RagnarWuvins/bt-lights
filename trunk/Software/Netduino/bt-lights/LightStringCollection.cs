@@ -9,14 +9,11 @@ namespace BTLights
     public class LightStringCollection
     {
         public LightString[] channels;
-        public event BTEvent SendChannelData;
         public int Length  = 0;
 
         private static Timer[] channelTimers = null;
         private static TimerCallback[] channelTimerDelegates = null;
         private MAX6966 mMAX6966;
-        private byte[] _WriteBuffer;
-        private byte[] _ReadBuffer;
 
         public LightStringCollection(int numberOfChannels)
         {
@@ -25,7 +22,7 @@ namespace BTLights
             this.mMAX6966.Init(false);
             this.mMAX6966.Flush();
             this.mMAX6966.SetPortOn(MAX6966.PWM_PortAll);
-
+            
             channels = new LightString[numberOfChannels];
             channelTimerDelegates = new TimerCallback[numberOfChannels];
             channelTimers = new Timer[numberOfChannels];
@@ -39,13 +36,6 @@ namespace BTLights
                     channelTimers[ch] = new Timer(channelTimerDelegates[ch], null, channels[ch].timerDelay, channels[ch].timerPeriod);
                 }
             }
-            //_WriteBuffer = new byte[] { Constants.Read(Constants.CONFIGURATION), 0x00 };
-            //mMAX6966.WriteRead(_WriteBuffer, _ReadBuffer);
-            //// run this configuration & apply the external input clock
-            //_WriteBuffer = new byte[] { Constants.Write(Constants.CONFIGURATION), Constants.CONF_RUN | Constants.CONF_OSC };
-            //mMAX6966.Write(_WriteBuffer);
-            //_WriteBuffer = new byte[] { Constants.Read(Constants.CONFIGURATION), 0x00 };
-            //mMAX6966.WriteRead(_WriteBuffer, _ReadBuffer);*/
         }
 
         /// <summary>
@@ -68,7 +58,7 @@ namespace BTLights
         /// <param name="setDimState">Activate the value directly</param>
         public void SetChannelValue(uint channel, int value)
         {
-            if (channels[channel].mode == (int)Constants.MODE.FUNC)
+            if (channels[channel].mode == (int)LightString.Modes.Function)
             {
                 channels[channel].dimState = value;
             }
@@ -84,7 +74,7 @@ namespace BTLights
         /// <param name="mChannelID">Channel number</param>
         public int GetChannelValue(uint channel)
         {
-            return mMAX6966.GetPortValue((byte)channel);
+            return channels[channel].Value;
         }
 
         /// <summary>
@@ -135,12 +125,7 @@ namespace BTLights
         /// <param name="mChannelID">Channel number</param>
         /// <param name="mode">Mode from the Constants.MODE struct</param>
         public void SetChannelMode(uint channel, int mode)
-        {
-            if (mode >= (int)Constants.MODE.NUM_OF_MODES)
-            {
-                MainProgram.RegisterError(MainProgram.ErrorCodes.WRONG_MODE_POINTER);
-                mode = (int)Constants.MODE.NOOP;
-            }
+        {            
             channels[channel].mode = mode;
         }
 
@@ -151,6 +136,26 @@ namespace BTLights
         public int GetChannelMode(uint channel)
         {
             return channels[channel].mode;
+        }
+
+        /// <summary>
+        /// Sets the channels function
+        /// </summary>
+        /// <param name="mChannelID">Channel number</param>
+        /// <param name="function">Channel function</param>
+        public void SetChannelFunction(uint channel, int function)
+        {
+            channels[channel].function = function;
+        }
+
+        /// <summary>
+        /// Gets the channels function
+        /// </summary>
+        /// <param name="channel">Channel number</param>
+        /// <returns>The value of the current function</returns>
+        public int GetChannelFunction(uint channel)
+        {
+            return channels[channel].function;
         }
 
         public void SetChannelLimits(uint channel, int limit, bool lower)
@@ -206,6 +211,14 @@ namespace BTLights
             channels[channel].dimState = 0;
             channelTimers[channel].Dispose();
             channelTimers[channel].Change(channels[channel].timerDelay * 10, channels[channel].timerPeriod);            
+        }
+
+        public void RestartAllTimer()
+        {
+            for (int ch = 0; ch < channels.Length; ch++)
+            {
+                channels[ch].dimState = MAX6966.PortLimitLow;
+            }
         }
     }
 }

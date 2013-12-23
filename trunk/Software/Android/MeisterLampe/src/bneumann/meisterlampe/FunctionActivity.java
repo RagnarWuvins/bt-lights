@@ -5,8 +5,6 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.res.AssetManager;
-import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -17,6 +15,8 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 import bneumann.meisterlampe.MainButton.Functions;
+import bneumann.protocol.Frame;
+import bneumann.protocol.Package;
 
 public class FunctionActivity extends Activity
 {
@@ -47,7 +47,7 @@ public class FunctionActivity extends Activity
 	@Override
 	protected void onDestroy()
 	{
-		super.onDestroy();
+		super.onDestroy();		
 		doUnbindService();
 		overridePendingTransition(R.anim.fadein, R.anim.fadeout);
 	}
@@ -55,7 +55,6 @@ public class FunctionActivity extends Activity
 	@Override
 	public void onBackPressed()
 	{
-		// TODO Auto-generated method stub
 		super.onBackPressed();
 		doUnbindService();
 		overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
@@ -83,10 +82,13 @@ public class FunctionActivity extends Activity
 				switch (cs)
 				{
 				case FUNC:
+					onSinePress();
 					break;
 				case UP:
+					onSawtoothClick();
 					break;
 				case DOWN:
+					onInverseSawtoothClick();
 					break;
 				case BACK:
 					finish();
@@ -99,6 +101,60 @@ public class FunctionActivity extends Activity
 		});
 	}
 	
+	protected void onSinePress()
+	{
+		Package output = new Package();
+		Frame f;
+		for(int i = 0; i < Lamp.NUMBER_OF_CHANNELS; i++)
+		{
+			f = new Frame();
+			f.setFunction(Lamp.SET_FUNCTION);
+			f.setChannel(i);
+			f.setValue(Lamp.FUNC_SINE);
+			output.add(f);
+		}
+		f = new Frame();
+		f.setFunction(Lamp.RESET_ALL_TIMER);
+		output.add(f);
+		mBluetoothService.write(output);
+	}
+
+	protected void onInverseSawtoothClick()
+	{
+		Package output = new Package();
+		Frame f;
+		for(int i = 0; i < Lamp.NUMBER_OF_CHANNELS; i++)
+		{
+			f = new Frame();
+			f.setFunction(Lamp.SET_FUNCTION);
+			f.setChannel(i);
+			f.setValue(Lamp.FUNC_SAW_REV);
+			output.add(f);
+		}
+		f = new Frame();
+		f.setFunction(Lamp.RESET_ALL_TIMER);
+		output.add(f);
+		mBluetoothService.write(output);
+	}
+
+	protected void onSawtoothClick()
+	{
+		Package output = new Package();
+		Frame f;
+		for(int i = 0; i < Lamp.NUMBER_OF_CHANNELS; i++)
+		{
+			f = new Frame();
+			f.setFunction(Lamp.SET_FUNCTION);
+			f.setChannel(i);
+			f.setValue(Lamp.FUNC_SAW);
+			output.add(f);
+		}
+		f = new Frame();
+		f.setFunction(Lamp.RESET_ALL_TIMER);
+		output.add(f);
+		mBluetoothService.write(output);
+	}
+
 	private ServiceConnection mServiceConnection = new ServiceConnection()
 	{
 		public void onServiceDisconnected(ComponentName name)

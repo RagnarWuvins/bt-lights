@@ -40,24 +40,7 @@ namespace BTLights
         public static Microsoft.SPOT.Hardware.Cpu.Pin MISO = Pins.GPIO_PIN_D12;     // MISO of the SPI module
         public static Microsoft.SPOT.Hardware.Cpu.Pin SCLK = Pins.GPIO_PIN_D13;     // Serial clock of the SPI module
 
-#endif
-        public enum MODE
-        {
-            NOOP, 	        // no change of current mode
-            DIRECT,	        // Use mChannelID value
-            ON,             // On value
-            OFF,            // Off value
-            FUNC,	        // set Function
-            NUM_OF_MODES,   // Number of modes
-        }
-
-        public enum FUNCTIONS
-        {
-            FUNC_FADE = MAX6966.PortLimitLow,    // lowest possible function value (will be send with value :)
-            FUNC_SAW,                // fade in no out
-            FUNC_SAW_REV,           // fade out  no in
-            NUM_OF_FUNC,             // Max number of functions
-        }
+#endif        
         #endregion
 
         private const byte READ = 0x80; // Read modifier

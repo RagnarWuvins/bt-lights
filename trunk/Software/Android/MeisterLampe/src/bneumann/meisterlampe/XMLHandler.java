@@ -97,7 +97,7 @@ public class XMLHandler
 		{
 			Element e = (Element) nodes.item(i);
 			int channelNum = Integer.parseInt(e.getAttribute("number"));
-			Channel curChan = mLamp.channels[channelNum];
+			Channel curChan = mLamp.mChannel[channelNum];
 			for(String propString : mPropStrings)
 			{
 				NodeList chanNode = e.getElementsByTagName(propString);
@@ -148,7 +148,7 @@ public class XMLHandler
 			
 			for (int i = 0; i < Lamp.NUMBER_OF_CHANNELS; i++)
 			{
-				Channel curChan = mLamp.channels[i];
+				Channel curChan = mLamp.mChannel[i];
 
 				serializer.startTag(null, "channel");				
 				serializer.attribute(null, "number", String.valueOf(i));

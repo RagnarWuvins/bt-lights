@@ -5,7 +5,7 @@ public class Header extends Frame
 	public Header(int length)
 	{
 		super();
-		setLength(length);
+		setPackageLength(length);
 	}
 	
 	public Header(byte[] data) throws Exception
@@ -23,7 +23,7 @@ public class Header extends Frame
 		return (int)(this.mBuffer[Frame.LENGTH - 2] & 0xff);
 	}
 	
-	public void setLength(int length)
+	public void setPackageLength(int length)
 	{
 		this.mBuffer[Frame.LENGTH - 1] = (byte)length;
 	}

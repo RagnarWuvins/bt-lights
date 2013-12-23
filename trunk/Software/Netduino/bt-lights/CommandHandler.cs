@@ -18,10 +18,6 @@ namespace BTLights
         public event NativeEventHandler InternalCommandReceived;
         public static uint CommandCounter = 0;
 
-        //|   CLA   |    MOD  |       ADR         |   VAL   |   CRC   | 
-        //|0000|0001|0000|0101|0000|0000|0000|0001|0000|0000|0000|0001|
-        // CRC = CLA + VAL
-
         private Package mPackage;
         private LightStringCollection mChannels;
         private delegate void SendAfterSplit();
@@ -31,29 +27,32 @@ namespace BTLights
             SetMode,                // 0x00: Set the mChannelID mode
             GetMode,                // 0x01: Get the mChannelID mode
             SetValue,               // 0x02: Set current value
-            GetValue,               // 0x03: Get current value            
-            SetMaximum,             // 0x04: Set the maximum value
-            GetMaximum,             // 0x05: Get the maximum value
-            SetMinimum,             // 0x06: Set the minimum value
-            GetMinimum,             // 0x07: Get the minimum value
-            SetDelay,               // 0x08: Set the timer delay
-            GetDelay,               // 0x09: Get the timer delay
-            SetPeriod,              // 0x0A: Set the timer period
-            GetPeriod,              // 0x0B: Get the timer period
-            SetRise,                // 0x0C: Set rise modifier
-            GetRise,                // 0x0D: Get rise modifier
-            SetOffset,              // 0x0E: Set offset modifier
-            GetOffset,              // 0x0F: Set offset modifier
-            ResetChannel,           // 0x10: Reset the mChannelID timer    
-            GetCommandCounter,      // 0x11: Get the command counter
-            ResetCommandCounter,    // 0x12: Reset the command counter
-            GetErrorLog,            // 0x13: trace out the error log
-            ResetSystem,            // 0x14: Do a hardware reset
-            GetSystemTime,          // 0x15: Get the time on the board
-            GetSystemVersion,       // 0x16: Get the hardware version
-            ResetBluetooth,         // 0x17: Reset the BT module only
-            Acknowledge,            // 0x18: Acknowdlege received command
-            ChannelTracer,          // 0x19: Activate or Deactivate channel value tracer
+            GetValue,               // 0x03: Get current value  
+            SetFunction,            // 0x04: Set channels function
+            GetFunction,            // 0x05: Get channels function
+            SetMaximum,             // 0x06: Set the maximum value
+            GetMaximum,             // 0x07: Get the maximum value
+            SetMinimum,             // 0x08: Set the minimum value
+            GetMinimum,             // 0x09: Get the minimum value
+            SetDelay,               // 0x0A: Set the timer delay
+            GetDelay,               // 0x0B: Get the timer delay
+            SetPeriod,              // 0x0C: Set the timer period
+            GetPeriod,              // 0x0D: Get the timer period
+            SetRise,                // 0x0E: Set rise modifier
+            GetRise,                // 0x0F: Get rise modifier
+            SetOffset,              // 0x10: Set offset modifier
+            GetOffset,              // 0x11: Set offset modifier
+            ResetChannel,           // 0x12: Reset the mChannelID timer    
+            GetCommandCounter,      // 0x13: Get the command counter
+            ResetCommandCounter,    // 0x14: Reset the command counter
+            GetErrorLog,            // 0x15: trace out the error log
+            ResetSystem,            // 0x16: Do a hardware reset
+            GetSystemTime,          // 0x17: Get the time on the board
+            GetSystemVersion,       // 0x18: Get the hardware version
+            ResetBluetooth,         // 0x19: Reset the BT module only
+            Acknowledge,            // 0x1A: Acknowdlege received command
+            ChannelTracer,          // 0x1B: Activate or Deactivate channel value tracer
+            ResetAllTimer,          // 0x1C: Resets all the channel timers
             NumberOfCommands,       // Number of commands must be end of enum
         }
 #if TARGET
@@ -98,6 +97,14 @@ namespace BTLights
                     case (byte)Command.GetMode:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelMode(channel);
                         break;
+                    case (byte)Command.SetFunction:
+                        mChannels.SetChannelFunction(channel, value);
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Payload = curFrame.Command;
+                        break;
+                    case (byte)Command.GetFunction:
+                        replyFrame.ContentByte[3] = (byte)mChannels.GetChannelFunction(channel);
+                        break;
                     case (byte)Command.SetMaximum:
                         this.mChannels.SetChannelLimits(channel, value, false);
                         replyFrame.Command = (byte)Command.Acknowledge;
@@ -118,13 +125,13 @@ namespace BTLights
                         this.mChannels.SetChannelDelay(channel, value);
                         break;
                     case (int)CommandHandler.Command.GetDelay:
-                        this.mChannels.GetChannelDelay(channel);
+                        replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelDelay(channel);
                         break;
                     case (int)CommandHandler.Command.SetPeriod:
                         this.mChannels.SetChannelPeriod(channel, value);
                         break;
                     case (int)CommandHandler.Command.GetPeriod:
-                        this.mChannels.GetChannelPeriod(channel);
+                        replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelPeriod(channel);
                         break;
                     case (int)CommandHandler.Command.SetRise:
                         this.mChannels.SetChannelCurve(channel, value, (int)Command.SetRise);
@@ -133,10 +140,10 @@ namespace BTLights
                         this.mChannels.SetChannelCurve(channel, value, (int)Command.SetOffset);
                         break;
                     case (int)CommandHandler.Command.GetRise:
-                        this.mChannels.GetChannelRise(channel);
+                        replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelRise(channel);
                         break;
                     case (int)CommandHandler.Command.GetOffset:
-                        this.mChannels.GetChannelOffset(channel);
+                        replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelOffset(channel);
                         break;
                     case (int)CommandHandler.Command.ResetChannel:
                         // block from other threads
@@ -178,6 +185,11 @@ namespace BTLights
                     case (byte)Command.ChannelTracer:
                         replyFrame.Command = (byte)Command.Acknowledge;
                         MainProgram.ChannelTracer(replyFrame.Payload);
+                        break;
+                    case (byte)Command.ResetAllTimer:
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Payload = curFrame.Command;
+                        this.mChannels.RestartAllTimer();
                         break;
                     default:
                         MainProgram.RegisterError(MainProgram.ErrorCodes.CommandUnknown, "Command unknown");

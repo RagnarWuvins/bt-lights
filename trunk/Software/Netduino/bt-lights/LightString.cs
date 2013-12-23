@@ -6,57 +6,77 @@ namespace BTLights
 {
     public class LightString
     {
-        //TODO: constants for default values
+        public enum Functions
+        {
+            Sine,               // Sine wave emulation
+            Sawtooth,           // Sawtooth wave emulation
+            SawtoothInverse,    // Inverse sawtooth wave emulation
+            NumberOfFunctions,  // Max number of functions
+        }
+
+        public enum Modes
+        {
+            NoOperation, 	// no change of current mode
+            Direct,	        // Use mChannelID value
+            On,             // On value
+            Off,            // Off value
+            Function,	    // set Function
+            NumberOfModes,  // Number of modes
+        }
+
         public byte mChannelID;
-        public int timerPeriod = 50, timerDelay = 0, dimState = MAX6966.PortLimitLow, functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;
+        public int timerPeriod = 50, timerDelay = 0, dimState = MAX6966.PortLimitLow;
         public byte upperLimit
         {
-            get { return _upperLimit; }
+            get { return mUpperLimit; }
             set
             {
-                if (value <= _lowerLimit)
+                if (value <= mLowerLimit)
                 {
-                    _upperLimit = _lowerLimit;
+                    mUpperLimit = mLowerLimit;
                 }
                 if (value >= MAX6966.PortLimitHigh)
                 {
-                    _upperLimit = MAX6966.PortLimitHigh;
+                    mUpperLimit = MAX6966.PortLimitHigh;
                 }
                 else
                 {
-                    _upperLimit = value;
+                    mUpperLimit = value;
                 }
             }
         }
         public byte lowerLimit
         {
-            get { return _lowerLimit; }
+            get { return mLowerLimit; }
             set
             {
-                if (value >= _upperLimit)
+                if (value >= mUpperLimit)
                 {
-                    _lowerLimit = _upperLimit;
+                    mLowerLimit = mUpperLimit;
                 }
                 if (value <= MAX6966.PortLimitLow)
                 {
-                    _lowerLimit = MAX6966.PortLimitLow;
+                    mLowerLimit = MAX6966.PortLimitLow;
                 }
                 else
                 {
-                    _lowerLimit = value;
+                    mLowerLimit = value;
                 }
             }
         }
         public double rise = 6.0;
         public double offset = 6.0;
 
-        private int _mode = (int)Constants.MODE.FUNC, _lastMode = (int)Constants.MODE.NOOP,
-            mValue = MAX6966.PortLimitLow, _lastValue = MAX6966.PortLimitLow;
-        private byte _lowerLimit = MAX6966.PortLimitLow, _upperLimit = MAX6966.PortLimitHigh;
-        private bool _dimDir = true;
-        private byte[] writeBuffer;
-        private byte[] readBuffer = new byte[2];
+        private int mMode = (int)Modes.Function;
+        private int mLastMode = (int)Modes.NoOperation;
+        private int mValue = MAX6966.PortLimitLow; 
+        private int mLastValue = MAX6966.PortLimitLow;
+        private int mFunction = (int)Functions.Sine;
+        private byte mLowerLimit = MAX6966.PortLimitLow;
+        private byte mUpperLimit = MAX6966.PortLimitHigh;
+        private bool mDimmingDirection = true;
         private MAX6966 mMax6966;
+        
         /// <summary>
         /// 
         /// </summary>
@@ -73,8 +93,7 @@ namespace BTLights
         {
             this.timerDelay = 0;
             this.timerPeriod = 50;
-            this.dimState = MAX6966.PortLimitLow;
-            this.functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;       
+            this.dimState = MAX6966.PortLimitLow;  
             this.rise = 6.0;
             this.offset = 6.0;
         }
@@ -85,33 +104,31 @@ namespace BTLights
             // Set the public mode by bluetooth and this delegate here will call the correct function
             switch (mode)
             {
-                case (int)Constants.MODE.NOOP:
+                case (int)Modes.NoOperation:
                     NoOp();
                     break;
-                case (int)Constants.MODE.DIRECT:
+                case (int)Modes.Direct:
                     SetDirect();
                     break;
-                case (int)Constants.MODE.ON:
+                case (int)Modes.On:
                     On();
                     break;
-                case (int)Constants.MODE.OFF:
+                case (int)Modes.Off:
                     Off();
                     break;
-                case (int)Constants.MODE.FUNC:
-                    switch (functionIndex)
+                case (int)Modes.Function:
+                    switch (this.mFunction)
                     {
-                        case (int)Constants.FUNCTIONS.FUNC_FADE:
-                            Fade(_lowerLimit, _upperLimit);
+                        case (int)Functions.Sine:
+                            Fade(mLowerLimit, mUpperLimit);
                             break;
-                        case (int)Constants.FUNCTIONS.FUNC_SAW:
-                            Saw(_lowerLimit, _upperLimit);
+                        case (int)Functions.Sawtooth:
+                            Saw(mLowerLimit, mUpperLimit);
                             break;
-                        case (int)Constants.FUNCTIONS.FUNC_SAW_REV:
-                            Saw_rev(_lowerLimit, _upperLimit);
+                        case (int)Functions.SawtoothInverse:
+                            Saw_rev(mLowerLimit, mUpperLimit);
                             break;
-                        default:
-                            MainProgram.RegisterError(MainProgram.ErrorCodes.WrongFunction);
-                            functionIndex = (int)Constants.FUNCTIONS.FUNC_FADE;             
+                        default:          
                             break;
                     }
                     break;
@@ -145,16 +162,16 @@ namespace BTLights
         // set to any value
         public int Value
         {
-            get { return mValue; }
+            get { return mMax6966.GetPortValue(this.mChannelID); }
             set
             {
-                _lastValue = mValue;
+                mLastValue = mValue;
                 mValue = value > upperLimit ? upperLimit : value;
                 mValue = value < lowerLimit ? lowerLimit : value;
-                int channelDissapation = (_lastValue - Value) >= 0 ? (_lastValue - Value) : -(_lastValue - Value);
-                if (channelDissapation > Constants.MAX_CHANNEL_DISSAPATION)
+                int channelDissapation = (mLastValue - Value) >= 0 ? (mLastValue - Value) : -(mLastValue - Value);
+                if (channelDissapation > Constants.MAX_CHANNEL_DISSAPATION && this.mFunction == (int)Functions.Sine)
                 {
-                    MainProgram.RegisterError(MainProgram.ErrorCodes.CHANNEL_VALUE_ASSERT);
+                    MainProgram.RegisterError(MainProgram.ErrorCodes.ChannelValueAssertion);
                 }
                 mMax6966.SetPortValue(this.mChannelID, this.mValue);
             }
@@ -164,18 +181,38 @@ namespace BTLights
         // mode setter and getter
         public int mode
         {
-            get { return _mode; }
+            get { return mMode; }
             set
             {
-                _lastMode = _mode;
-                _mode = value; 
+                if (mode >= (int)Modes.NumberOfModes)
+                {
+                    MainProgram.RegisterError(MainProgram.ErrorCodes.WrongMode);
+                    return;
+                }
+                mLastMode = mMode;
+                mMode = value; 
+            }
+        }
+
+        // mode setter and getter
+        public int function
+        {
+            get { return this.mFunction; }
+            set
+            {
+                if (value >= (int)Functions.NumberOfFunctions)
+                {
+                    MainProgram.RegisterError(MainProgram.ErrorCodes.WrongFunction);
+                    return;
+                }
+                this.mFunction = value;
             }
         }
 
         // fade in and out
-        public void Fade(int ll, int ul)
+        private void Fade(int ll, int ul)
         {
-            if (_dimDir)
+            if (mDimmingDirection)
             {
                 dimState += DimCurve(dimState);
             }
@@ -187,18 +224,18 @@ namespace BTLights
             if (dimState <= ll)
             {
                 dimState = ll;
-                _dimDir = !_dimDir;
+                mDimmingDirection = !mDimmingDirection;
             }
             else if (dimState >= ul)
             {
                 dimState = ul;
-                _dimDir = !_dimDir;
+                mDimmingDirection = !mDimmingDirection;
             }
             Value = dimState;
         }
 
         // fade in and go to lowerlimit
-        public void Saw(int ll, int ul)
+        private void Saw(int ll, int ul)
         {
             dimState += DimCurve(dimState);
             if (dimState >= ul)
@@ -209,7 +246,7 @@ namespace BTLights
         }
 
         // fade out and go to upperlimit
-        public void Saw_rev(int ll, int ul)
+        private void Saw_rev(int ll, int ul)
         {
             dimState -= DimCurve(dimState);
             if (dimState <= ll)

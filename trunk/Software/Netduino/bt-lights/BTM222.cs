@@ -71,10 +71,11 @@ namespace BTLights
             {
                 while (this.BytesToRead > 0)
                 {
-                    this.Read(mReadBuffer, mBufferPosition, 1);
-                    mBufferPosition++;
+                    int bytesToRead = this.BytesToRead;
+                    this.Read(mReadBuffer, mBufferPosition, bytesToRead);
+                    mBufferPosition += bytesToRead;
                 }
-                if (mReadBuffer[0] < 0x0A && mBufferPosition > 0)
+                if (mReadBuffer[0] < 0x0A && mBufferPosition > 3)
                 {
                     Header h = new Header();
                     h.ContentByte = Convert.SubArray(mReadBuffer, 0, Frame.Length);
@@ -89,11 +90,16 @@ namespace BTLights
                 }
                 else
                 {
-                    MainProgram.RegisterError(MainProgram.ErrorCodes.InterpretationError);
-                    ClearBuffer();
+                    // Make sure we have read data before throwing an error!
+                    if (mBufferPosition != 0)
+                    {
+                        MainProgram.RegisterError(MainProgram.ErrorCodes.InterpretationError);
+                        ClearBuffer();
+                    }
                 }
                 if (mBufferPosition > BTM222.bufferMax)
                 {
+                    MainProgram.RegisterError(MainProgram.ErrorCodes.BufferOverflow);
                     mBufferPosition = 0;
                 }
             }
