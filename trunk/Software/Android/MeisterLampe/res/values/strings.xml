@@ -43,5 +43,7 @@
     <string name="title_activity_function">FunctionActivity</string>
     <string name="function_selection_description">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</string>
     <string name="title_activity_level">LevelActivity</string>
+    <string name="connecting_please_wait">Connecting please wait...</string>
+    <string name="trying_to_setup_a_connection">Trying to setup a connection</string>
 
 </resources>
