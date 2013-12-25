@@ -4,6 +4,7 @@ import java.util.Set;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -29,6 +30,7 @@ public class SetupActivity extends PreferenceActivity
 	public static final String DEFAULT_DEVICE_ADDRESS = "default_device";
 	public static final String DEFAULT_DEVICE_NAME = "default_device_name";
 	public static final String FIRST_TIME_STARTUP = "first_time_start";
+	protected static final String TAG = "SetupActivity";
 
 	private ListArrayAdapter mListAdapter;
 	private DropDownArrayAdapter mDropAdapter;
@@ -111,8 +113,16 @@ public class SetupActivity extends PreferenceActivity
 			{
 				BluetoothDeviceModel bdm = (BluetoothDeviceModel) parent.getItemAtPosition(position);
 				mBtAdapter.cancelDiscovery();
-				BluetoothDevice bd = mBtAdapter.getRemoteDevice(bdm.getAddress());
-				activateBondedDevice(bd);				
+				try
+				{
+					BluetoothDevice bd = mBtAdapter.getRemoteDevice(bdm.getAddress());
+					activateBondedDevice(bd);	
+				}
+				catch(IllegalArgumentException ex)
+				{
+					Log.w(TAG, "Initilaized state, a device should be selected");
+				}
+							
 			}
 
 			public void onNothingSelected(AdapterView<?> arg0)

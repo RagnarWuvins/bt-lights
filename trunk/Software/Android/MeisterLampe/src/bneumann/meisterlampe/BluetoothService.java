@@ -3,12 +3,9 @@ package bneumann.meisterlampe;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Locale;
 import java.util.UUID;
-import android.app.Notification;
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -18,13 +15,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import bneumann.protocol.Package;
 
 /**
- * This class does all the work for setting up and managing Bluetooth connections with other devices. It has a thread that listens for incoming connections, a
- * thread for connecting with a device, and a thread for performing data transmissions when connected.
+ * This class does all the work for setting up and managing Bluetooth
+ * connections with other devices. It has a thread that listens for incoming
+ * connections, a thread for connecting with a device, and a thread for
+ * performing data transmissions when connected.
  */
 public class BluetoothService extends Service
 {
@@ -37,11 +37,18 @@ public class BluetoothService extends Service
 	private static final UUID MY_UUID_INSECURE = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
 	// Constants for other Applications
+	/** EXTRA FLAG: Bluetooth address of the device that is to be connected */
 	public static final String CONNECTION_ADDRESS = "connection_address";
+	/** EXTRA FLAG: Tells the service if it should be connected securely */
 	public static final String CONNECTION_SECURE = "connection_secure";
+	/** Action for new received package */
 	public static final String RX_NEW_PACKAGE = "rx_new_package";
+	/** Action for new state change */
 	public static final String CONNECTION_STATE_CHANGE = "state_change";
-	
+	// FIXME: rework the states OR send another event
+	public static final String CONNECTION_FAILED = "connection_failed";
+	public static final String CONNECTION_DONE = "connection_done";
+
 	// Member fields
 	private IBinder mBinder = new BluetoothServiceBinder();
 	private BluetoothAdapter mAdapter;
@@ -52,22 +59,26 @@ public class BluetoothService extends Service
 	private int NOTIFICATION = 42;
 	private Lamp mLamp;
 	private BluetoothDevice mBluetoothDevice;
-	
+
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
 	public static final int STATE_CONNECTING = 1; // now initiating an outgoing
 													// connection
 	public static final int STATE_CONNECTED = 2; // now connected to a remote
 													// device
+	public static final int STATE_CONNECTION_LOST = 3; // connection could not
+														// be established or has
+														// been lost
 
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver()
 	{
 		@Override
 		public void onReceive(Context context, Intent intent)
 		{
-			//TODO: for API > 11 it is possible to listen to connection changes. How cool would that be!
+			// TODO: for API > 11 it is possible to listen to connection
+			// changes. How cool would that be!
 			String action = intent.getAction();
-			if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
+			if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
 			{
 				int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
 				// remap Bluetoothadapter state to internal Service state
@@ -75,40 +86,43 @@ public class BluetoothService extends Service
 				{
 					setState(STATE_NONE);
 					disconnect(false);
-				}
-				else
+				} else
 				{
 					// if we already were connected feel free to reconnect
-					if(mBluetoothDevice != null)
+					if (mBluetoothDevice != null)
 					{
 						connect(mBluetoothDevice, true);
 					}
 				}
 			}
 		}
-	};	
-	
+	};
+
 	// ---------------------------------------
 	// Start of the Service overridden methods
 	// ---------------------------------------
 
 	@Override
 	public void onCreate()
-	{
-		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+	{		
 		this.mAdapter = BluetoothAdapter.getDefaultAdapter();
 		this.mState = STATE_NONE;
 		this.mLamp = new Lamp();
-		
+
 		// register for BluetoothAdapter change of state
 		registerReceiver(mMessageReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+		
+		// showing the notification manager to signal we are here
+		this.mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		showNotification("Bla", "test");
+		
 		super.onCreate();
 	}
 
 	@Override
 	public IBinder onBind(Intent intent)
 	{
-		//initFromIntent(intent);
+		// initFromIntent(intent);
 		return mBinder;
 	}
 
@@ -122,7 +136,8 @@ public class BluetoothService extends Service
 	}
 
 	/***
-	 * Starts the service. The intent should have CONNECTION_ADDRESS and CONNECTION_SECURE as extras
+	 * Starts the service. The intent should have CONNECTION_ADDRESS and
+	 * CONNECTION_SECURE as extras
 	 */
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId)
@@ -130,7 +145,7 @@ public class BluetoothService extends Service
 		initFromIntent(intent);
 		return super.onStartCommand(intent, flags, startId);
 	}
-	
+
 	@Override
 	public void onDestroy()
 	{
@@ -146,7 +161,7 @@ public class BluetoothService extends Service
 
 	private void initFromIntent(Intent intent)
 	{
-		if( intent.hasExtra(BluetoothService.CONNECTION_ADDRESS))
+		if (intent.hasExtra(BluetoothService.CONNECTION_ADDRESS))
 		{
 			String deviceAddress = intent.getStringExtra(BluetoothService.CONNECTION_ADDRESS);
 			boolean secure = intent.getBooleanExtra(BluetoothService.CONNECTION_SECURE, true);
@@ -157,34 +172,23 @@ public class BluetoothService extends Service
 
 	/**
 	 * Show a notification while this service is running.
-	 */	
-	@SuppressWarnings("deprecation") //TODO: fix for newer versions
+	 */
+	// TODO: fix for newer versions
 	private void showNotification(String label, String text)
 	{
 		// Set the icon, scrolling text and timestamp
-		Notification notification = new Notification(android.R.drawable.ic_menu_compass, label + " +++ " + text, System.currentTimeMillis());
-
-		Intent notificationIntent = new Intent(this, MainActivity.class);
-		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		
-		// The PendingIntent to launch our activity if the user selects this notification
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,notificationIntent , 0);
-
-		// Set the info for the views that show in the notification panel.
-		notification.setLatestEventInfo(this, label, text, contentIntent);
-		notification.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR | Notification.FLAG_ONLY_ALERT_ONCE; // last flag is for tablet
-
-		// Send the notification.
-		mNM.notify(NOTIFICATION, notification);
+		GeneralNotification notification = new GeneralNotification(this, label, text);
+		notification.show(this.mNM, NOTIFICATION);
 	}
+
 	// ---------------------------------------
 	// Lamp connection management
 	// ---------------------------------------
-	
+
 	private synchronized boolean updateLamp(byte[] encodedBytes)
 	{
 		Package p;
-		boolean status = false; 
+		boolean status = false;
 		try
 		{
 			p = new Package(encodedBytes);
@@ -196,25 +200,24 @@ public class BluetoothService extends Service
 			e.printStackTrace();
 		}
 		return status;
-		
+
 	}
-	
+
 	public synchronized Lamp getLamp()
 	{
 		return this.mLamp;
 	}
-	
 
 	public synchronized void queryLampUpdate()
 	{
 		this.write(this.mLamp.getUpdatePackage().getBytes());
 	}
-	
+
 	public synchronized void queryErrorLog()
-	{		
+	{
 		this.write(this.mLamp.getErrorLogRequestPackage().getBytes());
 	}
-	
+
 	// ---------------------------------------
 	// Here comes the Bluetooth code
 	// ---------------------------------------
@@ -230,7 +233,6 @@ public class BluetoothService extends Service
 		if (D)
 			Log.d(TAG, "setState() " + mState + " -> " + state);
 		mState = state;
-		//showNotification("State has changed!","Current state: " + state);
 		Intent intent = new Intent(CONNECTION_STATE_CHANGE);
 		intent.putExtra(CONNECTION_STATE_CHANGE, state);
 		sendBroadcast(intent);
@@ -243,7 +245,7 @@ public class BluetoothService extends Service
 	{
 		return mState;
 	}
-	
+
 	/**
 	 * Force sending a broadcast with our current state
 	 */
@@ -383,20 +385,15 @@ public class BluetoothService extends Service
 	 */
 	private void connectionFailed()
 	{
-		// FIXME: Return connection fail message to binder
+		setState(STATE_CONNECTION_LOST);
 	}
 
 	/**
-	 * Indicate that the connection attempt was successful and notify the UI Activity.
+	 * This thread runs while attempting to make an outgoing connection with a
+	 * device. It runs straight through; the connection either succeeds or
+	 * fails.
 	 */
-	private void connectionDone()
-	{
-		// FIXME: Return connection fail message to binder
-	}
-
-	/**
-	 * This thread runs while attempting to make an outgoing connection with a device. It runs straight through; the connection either succeeds or fails.
-	 */
+	@SuppressLint("NewApi")
 	private class ConnectThread extends Thread
 	{
 		private final BluetoothSocket mmSocket;
@@ -413,11 +410,12 @@ public class BluetoothService extends Service
 			// given BluetoothDevice
 			try
 			{
-				if (secure)
+				// Connection unsecure is only allowed from API 10 upwards :|
+				// (lint suppression on top!)
+				if (secure || (Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD_MR1))
 				{
 					tmp = device.createRfcommSocketToServiceRecord(MY_UUID_SECURE);
-				}
-				else
+				} else
 				{
 					tmp = device.createInsecureRfcommSocketToServiceRecord(MY_UUID_INSECURE);
 				}
@@ -485,7 +483,8 @@ public class BluetoothService extends Service
 	}
 
 	/**
-	 * This thread runs during a connection with a remote device. It handles all incoming and outgoing transmissions.
+	 * This thread runs during a connection with a remote device. It handles all
+	 * incoming and outgoing transmissions.
 	 */
 	private class ConnectedThread extends Thread
 	{
@@ -521,7 +520,6 @@ public class BluetoothService extends Service
 
 			mmInStream = tmpIn;
 			mmOutStream = tmpOut;
-			connectionDone();
 		}
 
 		public void run()
@@ -538,7 +536,7 @@ public class BluetoothService extends Service
 						for (int i = 0; i < bytesAvailable; i++)
 						{
 							// check if we might have read stupid data:
-							if(readBuffer[0] > 10 || readBuffer[1] > 10)
+							if (readBuffer[0] > 10 || readBuffer[1] > 10)
 							{
 								readBuffer = new byte[readBuffer.length];
 								readBufferPosition = 0;
@@ -546,18 +544,17 @@ public class BluetoothService extends Service
 							}
 							byte b = packetBytes[i];
 							int packageLength = readBuffer[3] & 0xff;
-							if (readBufferPosition >= packageLength*4-1 && readBufferPosition > 3)
+							if (readBufferPosition >= packageLength * 4 - 1 && readBufferPosition > 3)
 							{
-								byte[] encodedBytes = new byte[packageLength*4];
+								byte[] encodedBytes = new byte[packageLength * 4];
 								System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length - 1);
 								updateLamp(encodedBytes);
 								Intent intent = new Intent(RX_NEW_PACKAGE);
-								intent.putExtra(RX_NEW_PACKAGE, encodedBytes);	
-								sendBroadcast(intent);								
+								intent.putExtra(RX_NEW_PACKAGE, encodedBytes);
+								sendBroadcast(intent);
 								readBuffer = new byte[readBuffer.length];
 								readBufferPosition = 0;
-							}
-							else
+							} else
 							{
 								readBuffer[readBufferPosition++] = b;
 							}

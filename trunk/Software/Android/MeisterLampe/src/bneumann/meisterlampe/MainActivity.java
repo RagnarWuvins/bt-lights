@@ -1,12 +1,10 @@
 package bneumann.meisterlampe;
 
 import java.util.ArrayList;
-import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -19,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.MarginLayoutParams;
 import android.view.animation.Animation;
@@ -30,7 +29,10 @@ import bneumann.meisterlampe.MainButton.Functions;
 @SuppressLint("ShowToast")
 public class MainActivity extends Activity
 {
-	private static final int REQUEST_ENABLE = 0;
+	/** Request code send to onActivityResult when pressing the connect button */
+	private static final int REQUEST_ENABLE_CONNECT = 0;
+	/** Request code send to onActivityResult when pressing the settings button */
+	private static final int REQUEST_ENABLE_SETTINGS = 1;
 	private static final String TAG = "MeisterLampe startup";
 	private SharedPreferences mSettings;
 	public static final int MESSAGE_STATE_CHANGE = 0;
@@ -45,7 +47,7 @@ public class MainActivity extends Activity
 	private String mDefaultDevice;
 	private Lamp mLamp;
 	private NotificationManager mNM;
-	
+
 	protected String EXTRA_DEVICE_ADDRESS;
 	public static int REQUEST_NUMBER = 0;
 	public static final String NEW_LOG_ENTRY = "new_log_entry";
@@ -53,9 +55,11 @@ public class MainActivity extends Activity
 
 	private boolean mFirstTimeStartup;
 	private boolean mIsBound = false;
+	private ProgressDialog mConnectionProgress;
 
 	private AppContext mContext;
 
+	/** All registered broadcasts are handled here */
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver()
 	{
 		@Override
@@ -69,36 +73,10 @@ public class MainActivity extends Activity
 			}
 			if (action.equals(BluetoothService.RX_NEW_PACKAGE))
 			{
-				mLamp = mBluetoothService.getLamp();
-				String t = String.format(Locale.getDefault(), "%02d:%02d:%02d", mLamp.getSystemTime()[0], mLamp.getSystemTime()[1], mLamp.getSystemTime()[2]);
-				showNotification("Connection done", "Version: " + mLamp.getVersion() + " Build: " + mLamp.getBuild() + " Uptime: " + t);
+
 			}
 		}
 	};
-
-	
-	/**
-	 * Show a notification while this service is running.
-	 */	
-	@SuppressWarnings("deprecation") //TODO: fix for newer versions
-	private void showNotification(String label, String text)
-	{
-		// Set the icon, scrolling text and timestamp
-		Notification notification = new Notification(android.R.drawable.ic_menu_compass, label + " +++ " + text, System.currentTimeMillis());
-
-		Intent notificationIntent = new Intent(this, MainActivity.class);
-		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		
-		// The PendingIntent to launch our activity if the user selects this notification
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,notificationIntent , 0);
-
-		// Set the info for the views that show in the notification panel.
-		notification.setLatestEventInfo(this, label, text, contentIntent);
-		notification.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR | Notification.FLAG_ONLY_ALERT_ONCE; // last flag is for tablet
-
-		// Send the notification.
-		mNM.notify(42, notification);
-	}
 
 	/** Called when the activity is first created. */
 
@@ -109,7 +87,7 @@ public class MainActivity extends Activity
 
 		this.mContext = new AppContext();
 		this.mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-				
+
 		setContentView(R.layout.main);
 
 		SubButton sb = (SubButton) findViewById(R.id.SettingsButton);
@@ -132,10 +110,7 @@ public class MainActivity extends Activity
 		sb.setLayoutParams(lp);
 
 		// load settings
-		mLamp = new Lamp();
 		loadSettings();
-
-		Toast.makeText(this, "", Toast.LENGTH_SHORT); // init Toast
 
 		// initialize bluetooth adapter
 		this.mContext.BTAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -153,38 +128,13 @@ public class MainActivity extends Activity
 			return;
 		}
 
-		// FunctionWheel fw = (FunctionWheel)findViewById(R.id.FunctionWheel);
 		fw.playStartupAnimation(0);
-	}
-
-	/**
-	 * Receives a new package from the BluetoothService and puts it into it's Lamp module
-	 * 
-	 * @param encodedBytes
-	 *            package bytes from the service
-	 */
-	public void receiveNewPackage(byte[] encodedBytes)
-	{
-		try
-		{
-			//Package p = new Package(encodedBytes);
-			//mLamp.Update(p);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-
-	}
-
-	public void onStart()
-	{
-		super.onStart();
 	}
 
 	public void onDestroy()
 	{
-		// stop bluetooth connection
+		stopService();
+		// unbind bluetooth service
 		doUnbindService();
 		unregisterReceiver(mMessageReceiver);
 		this.mNM.cancelAll();
@@ -201,22 +151,19 @@ public class MainActivity extends Activity
 	/** Called when the activity resumes from another task (subactivity) **/
 	public void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
-		switch (requestCode)
+		switch (resultCode)
 		{
-		case REQUEST_ENABLE:
-			switch (resultCode)
+		case RESULT_OK:
+			onResumeBluetoothEnable();
+			if (requestCode == REQUEST_ENABLE_SETTINGS)
 			{
-			case RESULT_OK:
-				onResumeBluetoothEnable();
-				break;
-			case RESULT_CANCELED:
-				break;
-			default:
-				Log.d(TAG, "Some weird resultCode came back: " + resultCode);
-				break;
+				onSettingsClick((MainButton) findViewById(R.id.FunctionSettings));
 			}
 			break;
+		case RESULT_CANCELED:
+			break;
 		default:
+			Log.d(TAG, "Some weird resultCode came back: " + resultCode);
 			break;
 		}
 	}
@@ -277,7 +224,7 @@ public class MainActivity extends Activity
 	{
 		this.mBluetoothService.queryLampUpdate();
 	}
-	
+
 	public void onLevelClick(MainButton button)
 	{
 		this.mBluetoothService.queryErrorLog();
@@ -289,6 +236,10 @@ public class MainActivity extends Activity
 
 	public void onSettingsClick(MainButton button)
 	{
+		if (!this.checkAndEnableBTAdapter(REQUEST_ENABLE_SETTINGS))
+		{
+			return;
+		}
 		Intent intent = new Intent(this, SetupActivity.class);
 		this.startActivity(intent);
 	}
@@ -300,13 +251,21 @@ public class MainActivity extends Activity
 			enableFunctions();
 			return;
 		}
-		if (!this.mContext.BTAdapter.isEnabled())
+		if (!this.checkAndEnableBTAdapter(REQUEST_ENABLE_CONNECT))
 		{
-			Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-			startActivityForResult(enabler, REQUEST_ENABLE);
 			return;
 		}
 		enableFunctions();
+	}
+
+	public boolean checkAndEnableBTAdapter(int requestCode)
+	{
+		if (!this.mContext.BTAdapter.isEnabled())
+		{
+			Intent enabler = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+			startActivityForResult(enabler, requestCode);
+		}
+		return this.mContext.BTAdapter.isEnabled();
 	}
 
 	/**
@@ -319,21 +278,20 @@ public class MainActivity extends Activity
 		if (this.mFirstTimeStartup)
 		{
 			Toast.makeText(this, R.string.connect_first_time, Toast.LENGTH_SHORT).show();
-			if(this.mContext.Emulator)
+			if (this.mContext.Emulator)
 			{
 				FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
 				fw.setEnabled(true);
-			}			
-		}
-		else
-		{			
+			}
+		} else
+		{
 			startupService();
 			doBindService();
 		}
 	}
 
 	/**
-	 * This is initialized when bound to the service. 
+	 * This is initialized when bound to the service.
 	 */
 	private ServiceConnection mServiceConnection = new ServiceConnection()
 	{
@@ -346,23 +304,38 @@ public class MainActivity extends Activity
 		{
 			// casting awesomeness to get the service and attach it to the
 			mBluetoothService = ((BluetoothService.BluetoothServiceBinder) service).getService();
-			// If we come her from a service reconnection -> tell our UI what to do
+			// If we come her from a service reconnection -> tell our UI what to
+			// do
 			mBluetoothService.queryState();
 			Log.d(TAG, "Service connected");
 		}
 	};
 
 	/**
-	 * When the BluetoothService changes it's state this function will device what to do
-	 * @param state is one of BluetoothService STATE_* states
+	 * When the BluetoothService changes it's state this function will device
+	 * what to do
+	 * 
+	 * @param state
+	 *            is one of BluetoothService STATE_* states
 	 */
 	protected void onBluetoothStateChange(int state)
 	{
 		FunctionWheel fw = (FunctionWheel) findViewById(R.id.FunctionWheel);
+		if (this.mConnectionProgress != null && state != BluetoothService.STATE_CONNECTING)
+		{
+			this.mConnectionProgress.dismiss();
+			this.mConnectionProgress = null;
+		}
 		switch (state)
 		{
 		case BluetoothService.STATE_NONE:
 			fw.setEnabled(false);
+			break;
+		case BluetoothService.STATE_CONNECTION_LOST:
+			fw.setEnabled(false);
+			Toast t = Toast.makeText(this, "Connection could not be established or has been lost.", Toast.LENGTH_LONG);
+			t.setGravity(Gravity.CENTER, 0, 0);
+			t.show();
 			break;
 		case BluetoothService.STATE_CONNECTING:
 			fw.setEnabled(false);
@@ -372,7 +345,8 @@ public class MainActivity extends Activity
 			this.mBluetoothService.queryLampUpdate();
 			break;
 		}
-		// the setup button should be enabled regardless of the BT state (to choose another device)
+		// the setup button should be enabled regardless of the BT state (to
+		// choose another device)
 		fw.setChildEnabled(3, true);
 	}
 
@@ -383,11 +357,34 @@ public class MainActivity extends Activity
 		this.mFirstTimeStartup = mSettings.getBoolean(SetupActivity.FIRST_TIME_STARTUP, true);
 	}
 
+	private void showConnectionProgress()
+	{
+		this.mConnectionProgress = new ProgressDialog(this);
+		this.mConnectionProgress.setCanceledOnTouchOutside(true);
+		// TODO: what shall be done on cancel?
+		// this.mConnectionProgress.setOnCancelListener(listener)
+		this.mConnectionProgress.setTitle(getString(R.string.connecting_please_wait));
+		this.mConnectionProgress.setMessage(getString(R.string.trying_to_setup_a_connection));
+		this.mConnectionProgress.show();
+	}
+
 	private void startupService()
 	{
+		showConnectionProgress();
 		Intent intent = new Intent(this, BluetoothService.class);
 		intent.putExtra(BluetoothService.CONNECTION_ADDRESS, this.mDefaultDevice);
 		startService(intent);
+	}
+
+	private void stopService()
+	{
+		if (this.mBluetoothService != null)
+		{
+			this.mBluetoothService.disconnect(false);
+		}
+		Intent intent = new Intent(this, BluetoothService.class);
+		intent.putExtra(BluetoothService.CONNECTION_ADDRESS, this.mDefaultDevice);
+		stopService(intent);
 	}
 
 	void doBindService()
