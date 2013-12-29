@@ -15,6 +15,7 @@ namespace BTLights
         private const byte RAMP_UP = 0x12;
         private const byte LIGHT_ON = 0x02; // Maximum allowed value
         private const byte LIGHT_OFF = 0x01; // Minimum allowed value
+        private const byte DUMMY = 0xAF; // Dummy data for read
 
         private const byte CONFIGURATION = 0x10;
         private const byte CONF_RUN = 0x01; // run current config
@@ -142,9 +143,15 @@ namespace BTLights
 
         public byte GetPortValue(PWM_Port port)
         {
-            byte[] writeData = new byte[] { (byte)(READ | port), LIGHT_OFF };
+            byte[] writeData = new byte[] { (byte)(READ | port), DUMMY };
             byte[] readData = new byte[2];
             mSPI.WriteRead(writeData,readData);
+            // From the documentation:
+            // Issue another read or write command, and examine
+            // the bit stream at DOUT; the second 8 bits are the
+            // contents of the register addressed by bits D14
+            // through D8 in step 3).
+            mSPI.WriteRead(writeData, readData);
             return readData[1];
         }
     }

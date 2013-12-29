@@ -60,7 +60,7 @@ namespace BTLights
         {
             if (channels[channel].mode == (int)LightString.Modes.Function)
             {
-                channels[channel].dimState = value;
+                channels[channel].dimValue = value;
             }
             else
             {
@@ -208,7 +208,7 @@ namespace BTLights
 
         public void RestartChannelTimer(uint channel)
         {            
-            channels[channel].dimState = 0;
+            channels[channel].dimValue = 0;
             channelTimers[channel].Dispose();
             channelTimers[channel].Change(channels[channel].timerDelay * 10, channels[channel].timerPeriod);            
         }
@@ -217,7 +217,7 @@ namespace BTLights
         {
             for (int ch = 0; ch < channels.Length; ch++)
             {
-                channels[ch].dimState = MAX6966.PortLimitLow;
+                channels[ch].dimValue = MAX6966.PortLimitLow;
             }
         }
     }

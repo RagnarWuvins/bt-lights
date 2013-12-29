@@ -7,6 +7,10 @@ namespace bt_light_framework
     {
         public byte[] ContentByte;
         public const int Length = 4;
+        public const int ValueIndex = 3;
+        public const int CommandIndex = 0;
+        public const int ChannelIndex = 1;
+
         public uint ContentInteger
         {
             get { return (uint)(ContentByte[0] << 24 | ContentByte[1] << 16 | ContentByte[2] << 8 | ContentByte[3]); }
@@ -25,10 +29,16 @@ namespace bt_light_framework
             set { ContentByte[0] = value; }
         }
 
+        public byte Value
+        {
+            get { return (ContentByte[ValueIndex]); }
+            set { ContentByte[ValueIndex] = value; }
+        }
+
         public uint Payload
         {
             get { return (ContentInteger & 0x00FFFFFF); }
-            set { ContentInteger = ContentInteger | (value & 0x00FFFFFF); }
+            set { ContentInteger = value & 0x00FFFFFF; }
         }
 
         public Frame()

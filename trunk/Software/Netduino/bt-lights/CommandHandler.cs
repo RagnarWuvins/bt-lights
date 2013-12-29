@@ -84,7 +84,7 @@ namespace BTLights
                     case (byte)Command.SetValue:
                         mChannels.SetChannelValue(channel, value);
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetValue:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelValue(channel);
@@ -92,7 +92,7 @@ namespace BTLights
                     case (byte)Command.SetMode:
                         mChannels.SetChannelMode(channel, value);
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetMode:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelMode(channel);
@@ -100,7 +100,7 @@ namespace BTLights
                     case (byte)Command.SetFunction:
                         mChannels.SetChannelFunction(channel, value);
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetFunction:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelFunction(channel);
@@ -108,7 +108,7 @@ namespace BTLights
                     case (byte)Command.SetMaximum:
                         this.mChannels.SetChannelLimits(channel, value, false);
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetMaximum:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelLimits(channel, false);
@@ -116,28 +116,36 @@ namespace BTLights
                     case (byte)Command.SetMinimum:
                         this.mChannels.SetChannelLimits(channel, value, true);
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetMinimum:
                         replyFrame.ContentByte[3] = (byte)mChannels.GetChannelLimits(channel, true);
                         break;
                     case (int)CommandHandler.Command.SetDelay:
                         this.mChannels.SetChannelDelay(channel, value);
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (int)CommandHandler.Command.GetDelay:
                         replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelDelay(channel);
                         break;
                     case (int)CommandHandler.Command.SetPeriod:
                         this.mChannels.SetChannelPeriod(channel, value);
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (int)CommandHandler.Command.GetPeriod:
                         replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelPeriod(channel);
                         break;
                     case (int)CommandHandler.Command.SetRise:
                         this.mChannels.SetChannelCurve(channel, value, (int)Command.SetRise);
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (int)CommandHandler.Command.SetOffset:
                         this.mChannels.SetChannelCurve(channel, value, (int)Command.SetOffset);
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (int)CommandHandler.Command.GetRise:
                         replyFrame.ContentByte[3] = (byte)this.mChannels.GetChannelRise(channel);
@@ -161,6 +169,8 @@ namespace BTLights
                         break;
                     case (byte)Command.ResetCommandCounter:
                         CommandCounter = 0;
+                        replyFrame.Command = (byte)Command.Acknowledge;
+                        replyFrame.Value = curFrame.Command;
                         break;
                     case (byte)Command.GetErrorLog:
                         replyFrame.Command = (byte)Command.Acknowledge;
@@ -188,7 +198,7 @@ namespace BTLights
                         break;
                     case (byte)Command.ResetAllTimer:
                         replyFrame.Command = (byte)Command.Acknowledge;
-                        replyFrame.Payload = curFrame.Command;
+                        replyFrame.Value = curFrame.Command;
                         this.mChannels.RestartAllTimer();
                         break;
                     default:

@@ -25,7 +25,9 @@ namespace BTLights
         }
 
         public byte mChannelID;
-        public int timerPeriod = 50, timerDelay = 0, dimState = MAX6966.PortLimitLow;
+        public int timerPeriod = 50;
+        public int timerDelay = 0;
+        public int dimValue = MAX6966.PortLimitLow;
         public byte upperLimit
         {
             get { return mUpperLimit; }
@@ -93,7 +95,7 @@ namespace BTLights
         {
             this.timerDelay = 0;
             this.timerPeriod = 50;
-            this.dimState = MAX6966.PortLimitLow;  
+            this.dimValue = MAX6966.PortLimitLow;  
             this.rise = 6.0;
             this.offset = 6.0;
         }
@@ -184,10 +186,15 @@ namespace BTLights
             get { return mMode; }
             set
             {
-                if (mode >= (int)Modes.NumberOfModes)
+                if (value >= (int)Modes.NumberOfModes)
                 {
                     MainProgram.RegisterError(MainProgram.ErrorCodes.WrongMode);
                     return;
+                }
+                if (value == (int)Modes.Function)
+                {
+                    // when return to sweep, we want to start with the current setting:
+                    dimValue = this.Value;
                 }
                 mLastMode = mMode;
                 mMode = value; 
@@ -214,46 +221,46 @@ namespace BTLights
         {
             if (mDimmingDirection)
             {
-                dimState += DimCurve(dimState);
+                dimValue += DimCurve(dimValue);
             }
             else
             {
-                dimState -= DimCurve(dimState);
+                dimValue -= DimCurve(dimValue);
             }
 
-            if (dimState <= ll)
+            if (dimValue <= ll)
             {
-                dimState = ll;
+                dimValue = ll;
                 mDimmingDirection = !mDimmingDirection;
             }
-            else if (dimState >= ul)
+            else if (dimValue >= ul)
             {
-                dimState = ul;
+                dimValue = ul;
                 mDimmingDirection = !mDimmingDirection;
             }
-            Value = dimState;
+            Value = dimValue;
         }
 
         // fade in and go to lowerlimit
         private void Saw(int ll, int ul)
         {
-            dimState += DimCurve(dimState);
-            if (dimState >= ul)
+            dimValue += DimCurve(dimValue);
+            if (dimValue >= ul)
             {
-                dimState = ll;
+                dimValue = ll;
             }
-            Value = dimState;
+            Value = dimValue;
         }
 
         // fade out and go to upperlimit
         private void Saw_rev(int ll, int ul)
         {
-            dimState -= DimCurve(dimState);
-            if (dimState <= ll)
+            dimValue -= DimCurve(dimValue);
+            if (dimValue <= ll)
             {
-                dimState = ul;
+                dimValue = ul;
             }
-            Value = dimState;
+            Value = dimValue;
         }
 
         private int DimCurve(int x)
